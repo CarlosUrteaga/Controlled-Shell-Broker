@@ -1,12 +1,61 @@
 # AGENTS.md
 
-This repository is designed to support repeatable coding-agent sessions. Treat this file as the operating contract for future work.
+This repository is designed to support repeatable coding-agent sessions for building a Rust-based command-line execution harness.
+
+Treat this file as the operating contract for future work.
+
+## Repository Purpose
+
+This repository implements the environment layer for LLM-assisted development workflows.
+
+The goal is to build a Rust-based command-line harness that can eventually allow an LLM-driven agent or external controller to:
+
+- execute shell commands;
+- spawn and manage terminal/process sessions;
+- capture stdout, stderr, exit codes, and durations;
+- enforce timeouts and execution policies;
+- manage working directories and repository boundaries;
+- produce structured logs for every action.
+
+This repository is not the final agent.
+
+It is the execution substrate that future agents, external controllers, or coding workflows may use.
 
 ## Repository State
 
 - The repo is documentation-only until implementation work is explicitly requested.
+- The current phase is harness design, not production implementation.
+- Do not add Rust source code, dependencies, CLI scaffolding, or CI unless the task explicitly requests it.
 - Do not invent production behavior that conflicts with `docs/PRODUCT_SPEC.md` or `docs/ARCHITECTURE.md`.
 - Prefer updating the docs first when a requirement, workflow, or architecture assumption changes.
+
+## Design Boundary
+
+The harness should be designed as a controlled execution broker, not as unrestricted shell access.
+
+A normal terminal executes whatever the user types.
+
+This harness must eventually validate, constrain, execute, capture, and log commands in a structured way.
+
+The intended future architecture is:
+
+```text
+LLM / Agent / External Controller
+   |
+   v
+Rust CLI Harness
+   |
+   +-- command runner
+   +-- process/session manager
+   +-- policy layer
+   +-- workspace boundary manager
+   +-- stdout/stderr capture
+   +-- structured logs
+   +-- timeout/kill controls
+   |
+   v
+Operating System / Repository / Terminal
+```
 
 ## Required Reading Order
 
