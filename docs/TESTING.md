@@ -1,0 +1,116 @@
+# Testing Strategy
+
+## Status
+
+No production code exists yet. This document defines the validation standard for future tasks.
+
+## Testing Goals
+
+Future implementation should prove:
+
+- commands execute in the intended working directory;
+- stdout and stderr are captured correctly;
+- exit codes are reported correctly;
+- timeouts terminate long-running commands;
+- structured JSON output is valid and complete;
+- logging occurs for each command execution;
+- policy enforcement behaves as documented.
+
+## Test Pyramid For This Repository
+
+### Unit Tests
+
+Use for:
+
+- argument parsing;
+- request validation;
+- timeout calculation;
+- result serialization;
+- policy decisions.
+
+Expected command:
+
+```bash
+cargo test
+```
+
+### Integration Tests
+
+Use for:
+
+- end-to-end CLI invocation;
+- real subprocess execution;
+- cwd handling;
+- timeout behavior;
+- JSON output verification.
+
+Expected command:
+
+```bash
+cargo test --test '*'
+```
+
+### Manual Validation
+
+Use when needed for:
+
+- checking CLI ergonomics;
+- inspecting emitted logs;
+- validating behavior with representative shell commands.
+
+Representative future commands:
+
+```bash
+cargo run -- run --cwd . --timeout 5 "pwd"
+cargo run -- run --cwd . --timeout 5 "echo hello"
+cargo run -- run --cwd . --timeout 1 "sleep 5"
+```
+
+## Task-Level Validation Contract
+
+Every future task must explicitly list:
+
+- the exact test commands to run;
+- whether those commands are unit, integration, lint, format, or manual validation;
+- what outcome is expected from each command.
+
+If no automated tests exist yet for a task, the task must still provide:
+
+- the reason no tests exist;
+- the minimum manual validation commands required;
+- the next follow-up task needed to add test coverage.
+
+## Minimum Validation Expectations
+
+For future Rust implementation tasks, the default expectation is:
+
+```bash
+cargo fmt --check
+cargo test
+```
+
+Additional commands should be listed when relevant, such as:
+
+```bash
+cargo clippy --all-targets --all-features -- -D warnings
+```
+
+## Acceptance Criteria Standard
+
+Acceptance criteria should be observable and testable. Avoid vague criteria such as "works correctly."
+
+Good examples:
+
+- `llm-shell run` returns valid JSON containing `stdout`, `stderr`, `exit_code`, and `duration_ms`.
+- A command exceeding the timeout is terminated and reported as timed out.
+- A failing subprocess returns a non-zero exit code without crashing the CLI.
+
+## Evidence Standard
+
+Every completed task should record:
+
+- commands executed;
+- whether they passed or failed;
+- any relevant notes on limitations or environment assumptions.
+
+Use the PR template under `.github/pull_request_template.md` for this evidence.
