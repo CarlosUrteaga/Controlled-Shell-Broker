@@ -85,3 +85,41 @@ Consequences:
 - coding sessions become easier to review and resume;
 - acceptance becomes more objective;
 - diffs and validation are easier to audit.
+
+### D-0005: The First Implementation Slice Is The CLI Request Boundary
+
+- Date: 2026-05-23
+- Status: Accepted
+
+Context:
+
+The harness will eventually include execution, policy, logging, and session management, but the first durable interface should be the boundary between external input and internal broker requests.
+
+Decision:
+
+The first architectural slice is the CLI / Request Interface. The CLI is an adapter that parses external input and normalizes it into a canonical typed `ExecutionRequest`. It should not directly own execution, policy, or logging concerns.
+
+Consequences:
+
+- the system is less tightly coupled to the CLI as the only interface;
+- future adapters such as JSON, MCP, or RPC can reuse the same internal request model;
+- validation, execution, and policy logic can evolve behind a stable request contract.
+
+### D-0006: Command Input Uses `--` And Canonical Vector Arguments
+
+- Date: 2026-05-23
+- Status: Accepted
+
+Context:
+
+The harness needs a clear boundary between its own flags and the command payload it will later execute.
+
+Decision:
+
+The initial CLI should use `--` to separate harness arguments from command arguments, and the canonical internal command representation should be `Vec<String>` rather than a shell string.
+
+Consequences:
+
+- command payload parsing is more explicit and less ambiguous;
+- request validation is simpler and safer;
+- shell-string execution, if ever supported, can be treated as a distinct mode instead of the default behavior.

@@ -43,7 +43,7 @@ Secondary users:
 The initial CLI contract is expected to resemble:
 
 ```bash
-llm-shell run --cwd ./repo --timeout 30 "cargo test"
+harness run --cwd ./repo --timeout 30 -- cargo test
 ```
 
 Version 0 should support:
@@ -58,6 +58,13 @@ Version 0 should support:
 - structured JSON response;
 - basic command logging.
 
+The first implementation slice should prioritize the CLI/request interface boundary:
+
+- parse CLI input;
+- validate request shape;
+- normalize into a typed `ExecutionRequest`;
+- preserve a stable internal request contract for later broker components.
+
 ## Functional Requirements
 
 ### Command Execution
@@ -65,6 +72,7 @@ Version 0 should support:
 - The tool must execute a user-provided shell command.
 - The tool must run the command relative to an explicit or default working directory.
 - The tool must report whether the command completed, failed, or timed out.
+- The canonical internal command representation should be a vector of arguments, not a shell string.
 
 ### Output Reporting
 
@@ -72,6 +80,14 @@ Version 0 should support:
 - The tool must include exit status when available.
 - The tool must include wall-clock duration.
 - The tool must return results in JSON.
+- JSON should be the default machine-readable output format.
+
+### Request Interface
+
+- The CLI must use `--` to separate harness arguments from command arguments.
+- The CLI must reject empty commands before they reach the broker.
+- The CLI must validate basic request shape but not enforce execution policy.
+- The CLI must convert external input into a stable typed request model.
 
 ### Timeout Handling
 
@@ -87,6 +103,7 @@ Version 0 should support:
 
 ## Expected Future Extensions
 
+- alternate request adapters such as JSON, MCP, or RPC;
 - long-lived process handles;
 - multiple concurrent sessions;
 - command allow/deny policies;
