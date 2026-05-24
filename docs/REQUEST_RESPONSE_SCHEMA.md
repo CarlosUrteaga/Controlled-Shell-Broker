@@ -72,8 +72,15 @@ Harness-level execution failure:
   "request_id": "generated-or-provided-id",
   "operation": "run",
   "status": "execution_error",
+  "cwd": "./repo",
+  "command": ["missing-command"],
+  "exit_code": null,
+  "stdout": "",
+  "stderr": "",
+  "duration_ms": 0,
+  "timed_out": false,
   "error": {
-    "code": "process_spawn_failed",
+    "code": "process_start_failed",
     "message": "The command could not be started."
   }
 }
@@ -83,6 +90,8 @@ Rules:
 
 - `invalid_request`: request was rejected before execution
 - `execution_error`: the harness could not start, observe, or finish execution in a normal command-result path
+- `execution_error` preserves the standard result envelope and includes an `error` object
+- `stdout` and `stderr` should be empty strings when no process started
 
 ## `ExecutionEvent`
 
@@ -106,7 +115,24 @@ Rules:
 - One `ExecutionEvent` record is persisted per execution attempt that reaches the broker.
 - The event is machine-readable execution evidence, separate from the caller JSON result.
 - Version 0 requires persistence to a tool-managed location outside the target workspace.
+- Version 0 evidence should prioritize metadata over full stdout and stderr persistence.
 - Version 0 does not define additional policy, approval, or session event shapes.
+
+## Required v0 Error Codes
+
+```text
+missing_cwd
+invalid_cwd
+missing_timeout
+invalid_timeout
+missing_command
+unknown_flag
+unsupported_output_format
+unsupported_operation
+invalid_argument_shape
+process_start_failed
+evidence_write_failed
+```
 
 ## Status Vocabulary
 
@@ -116,6 +142,16 @@ failed
 timed_out
 invalid_request
 execution_error
+```
+
+## Status Mapping
+
+```text
+success            exit_code == 0
+failed             process completed with non-zero exit code
+timed_out          timeout reached before completion
+invalid_request    request rejected before execution
+execution_error    harness-level execution or evidence failure
 ```
 
 ## Shape Stability Rules

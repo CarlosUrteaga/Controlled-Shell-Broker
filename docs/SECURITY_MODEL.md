@@ -67,6 +67,16 @@ The tool should make command execution actions:
 - Version 0 should attempt to terminate the spawned command path on timeout, but it does not promise full descendant cleanup semantics.
 - Timeout results must be visible in structured output and logs.
 
+## Version 0 Timeout Limitation
+
+Version 0 only guarantees timeout detection and a best-effort attempt to terminate the direct child process.
+
+It does not guarantee full process-tree cleanup, process-group termination, container isolation, or operating-system sandboxing.
+
+Commands that spawn child processes may leave descendants behind.
+
+This is a known v0 limitation and should be revisited before adding long-lived sessions or broader automation.
+
 ## Environment And Secret Handling
 
 - Environment variables may contain secrets.
@@ -81,6 +91,12 @@ The tool should make command execution actions:
 - Version 0 requires one persisted machine-readable execution record per run.
 - Version 0 evidence must be stored outside the target workspace in a tool-managed location.
 - Future log design should separate operational metadata from high-risk payload content when practical.
+
+## Evidence Logging Risk
+
+Version 0 evidence records should avoid persisting full stdout and stderr by default because command output may contain secrets, tokens, file paths, or proprietary data.
+
+The CLI response may return stdout and stderr to the caller, but persisted evidence should prioritize metadata unless a later logging policy explicitly allows output capture.
 
 ## Human Approval Assumptions
 

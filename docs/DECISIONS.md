@@ -108,3 +108,38 @@ Version 0 assumes spawned commands inherit the parent process environment. Envir
 - Status: Accepted
 The TypeScript implementation under `futurework/BashTool/` is a useful reference source for concepts, but Rust v0 should not aim for feature parity with it.
 - v0 stays focused on one foreground execution path instead of inheriting background tasks, permission engines, sandbox flows, or UI-driven orchestration from the TypeScript tool.
+
+### D-0016: Version 0 Timeout Termination Scope
+
+- Date: 2026-05-24
+- Status: Accepted
+Version 0 timeout behavior guarantees timeout detection and a best-effort attempt to terminate the direct child process.
+- full process-tree or process-group termination is not guaranteed in v0 and remains deferred.
+
+### D-0017: Reject Invalid `--cwd` Before Execution
+
+- Date: 2026-05-24
+- Status: Accepted
+Invalid `--cwd` values are rejected during request validation and normalization before execution.
+- invalid `cwd` maps to `invalid_request` with error code `invalid_cwd`, and no command is executed.
+
+### D-0018: Store Version 0 Evidence Outside The Target Working Directory
+
+- Date: 2026-05-24
+- Status: Accepted
+Version 0 writes execution evidence outside the target working directory in a harness-owned state directory using a per-request file strategy such as `<timestamp>_<request_id>.json`.
+- evidence persistence is required for requests that reach execution, and evidence-write failure maps to `execution_error`.
+
+### D-0019: Use Generic Process Exit Semantics In Version 0
+
+- Date: 2026-05-24
+- Status: Accepted
+Version 0 uses generic process semantics only: exit code `0` is `success`, non-zero exit is `failed`, timeout is `timed_out`, malformed request is `invalid_request`, and harness-level failures are `execution_error`.
+- command-specific semantics such as grep, diff, or test interpretation are deferred until after v0.
+
+### D-0020: Preserve The Standard Result Envelope For `execution_error`
+
+- Date: 2026-05-24
+- Status: Accepted
+`execution_error` responses preserve the standard result envelope when possible and include an `error` object; `stdout` and `stderr` are empty strings when no process started.
+- callers can consume one stable result shape across success, failure, timeout, and harness-level execution failure cases.
