@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repository is designed to support repeatable coding-agent sessions for building a Rust-based workspace execution tool for coding agents.
+This repository is designed to support repeatable coding-agent sessions for building a Rust-based controlled command-line execution tool.
 
 Treat this file as the operating contract for future work.
 
@@ -13,12 +13,11 @@ The tool is not the intelligence. The agent decides what to do next.
 The Rust tool should eventually provide:
 
 - controlled command execution;
-- repository and workspace context access;
 - process and session handling;
 - structured observations and logs;
 - safety boundaries and repeatable interfaces.
 
-Version 0 is narrower: a controlled foreground command runner with typed requests and structured results.
+Version 0 is narrower: run one foreground command inside an explicit working directory, enforce a timeout, capture stdout and stderr, return structured JSON, and record basic execution evidence.
 
 ## Repository State
 
@@ -39,8 +38,7 @@ The agent owns:
 
 The Rust tool owns:
 
-- controlled workspace access;
-- command execution;
+- controlled command execution in an explicit working directory;
 - process lifecycle control;
 - structured observations;
 - evidence capture;
@@ -64,10 +62,11 @@ Before starting implementation work, read:
 4. `docs/CLI_CONTRACT.md`
 5. `docs/REQUEST_RESPONSE_SCHEMA.md`
 6. `docs/SECURITY_MODEL.md`
-7. `docs/TESTING.md`
-8. `docs/BACKLOG.md`
-9. `docs/DECISIONS.md`
-10. `.github/pull_request_template.md`
+7. `docs/ROADMAP.md`
+8. `docs/TESTING.md`
+9. `docs/BACKLOG.md`
+10. `docs/DECISIONS.md`
+11. `.github/pull_request_template.md`
 
 ## Task Intake Contract
 
@@ -109,6 +108,9 @@ If any item is missing, the agent should propose a concrete version before codin
 - Prefer small, reviewable diffs.
 - Add tests with implementation work whenever practical.
 - Update `docs/DECISIONS.md` when a design choice is added or reversed.
+- Treat `docs/CLI_CONTRACT.md` as the caller-facing CLI source of truth.
+- Treat `docs/REQUEST_RESPONSE_SCHEMA.md` as the schema source of truth.
+- Treat `docs/SECURITY_MODEL.md` as the v0 safety source of truth.
 
 ## Definition Of Done
 
