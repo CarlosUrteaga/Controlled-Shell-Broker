@@ -1,52 +1,54 @@
 # Controlled Shell Broker
 
-`Controlled Shell Broker` is a documentation-first repository for a Rust-based CLI harness that gives an LLM agent structured, auditable, and policy-controlled access to terminal execution.
+`Controlled Shell Broker` is a documentation-first repository for a Rust-based workspace execution tool for coding agents.
 
-The repository currently defines the product, architecture, workflow, and delivery standards. It does not yet contain production Rust code.
+The tool is not the agent itself. It is the controlled environment through which an agent, script, or human can interact with a repository.
 
-## Purpose
+## Summary
 
-The harness is intended to be the execution layer for LLM-assisted software development, not the autonomous agent itself.
+The long-term system should let an agent:
 
-The long-term system should allow an agent to:
+- run validation and build commands;
+- inspect repository state through controlled interfaces;
+- manage foreground and long-lived processes;
+- capture structured results and evidence;
+- operate within workspace, timeout, and policy boundaries.
 
-- execute shell commands inside an approved workspace;
-- capture stdout, stderr, exit codes, and duration;
-- manage long-lived processes and terminal sessions;
-- enforce timeout and policy controls;
-- log every action in a structured and reviewable format.
+Version 0 starts with one primitive: controlled foreground command execution.
 
 ## Current Status
 
-This repository is in pre-implementation mode.
+The repository is still documentation-only.
 
 Included now:
 
-- product requirements;
-- architecture intent;
-- testing strategy;
-- backlog and decisions;
-- agent-session workflow rules for reproducible future tasks.
+- product and architecture docs;
+- CLI and schema contracts;
+- security, roadmap, testing, backlog, and decisions;
+- workflow rules for future coding-agent sessions.
 
 Not included yet:
 
 - Rust crate scaffolding;
 - CLI implementation;
-- production code for execution, policy, logging, or session management.
+- production code for execution, policy, logging, or sessions.
 
 ## Repository Guide
 
-- [AGENTS.md](AGENTS.md): required workflow for future coding-agent sessions.
-- [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md): product scope and version goals.
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): planned system structure and boundaries.
-- [docs/TESTING.md](docs/TESTING.md): validation strategy and task-level test expectations.
-- [docs/BACKLOG.md](docs/BACKLOG.md): ordered implementation backlog.
-- [docs/DECISIONS.md](docs/DECISIONS.md): recorded design and process decisions.
-- [.github/pull_request_template.md](.github/pull_request_template.md): PR template that all future tasks should satisfy.
+- [AGENTS.md](AGENTS.md): operating contract for future coding-agent sessions.
+- [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md): product behavior and scope.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): system structure and boundaries.
+- [docs/CLI_CONTRACT.md](docs/CLI_CONTRACT.md): caller-facing CLI behavior.
+- [docs/REQUEST_RESPONSE_SCHEMA.md](docs/REQUEST_RESPONSE_SCHEMA.md): canonical shapes.
+- [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md): safety assumptions and limits.
+- [docs/ROADMAP.md](docs/ROADMAP.md): phased evolution.
+- [docs/TESTING.md](docs/TESTING.md): validation expectations.
+- [docs/BACKLOG.md](docs/BACKLOG.md): near-term design tasks.
+- [docs/DECISIONS.md](docs/DECISIONS.md): recorded design decisions.
 
 ## Working Rule
 
-Future implementation work should start by reading `AGENTS.md` and the documents in `docs/`. Every task must define:
+Every future task must define:
 
 - a clear requirement;
 - expected files to change;
@@ -56,10 +58,8 @@ Future implementation work should start by reading `AGENTS.md` and the documents
 
 ## Initial CLI Goal
 
-The first production milestone remains:
-
 ```bash
 llm-shell run --cwd ./repo --timeout 30 -- cargo test
 ```
 
-Expected `v0` behavior is documented in [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md). No implementation has been started yet.
+That command is the first slice of the broader workspace execution tool vision.

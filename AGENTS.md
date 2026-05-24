@@ -1,89 +1,87 @@
 # AGENTS.md
 
-This repository is designed to support repeatable coding-agent sessions for building a Rust-based command-line execution harness.
+This repository is designed to support repeatable coding-agent sessions for building a Rust-based workspace execution tool for coding agents.
 
 Treat this file as the operating contract for future work.
 
 ## Repository Purpose
 
-This repository implements the environment layer for LLM-assisted development workflows.
+This repository defines the controlled environment layer for agent-assisted software development.
 
-The goal is to build a Rust-based command-line harness that can eventually allow an LLM-driven agent or external controller to:
+The tool is not the intelligence. The agent decides what to do next.
 
-- execute shell commands;
-- spawn and manage terminal/process sessions;
-- capture stdout, stderr, exit codes, and durations;
-- enforce timeouts and execution policies;
-- manage working directories and repository boundaries;
-- produce structured logs for every action.
+The Rust tool should eventually provide:
 
-This repository is not the final agent.
+- controlled command execution;
+- repository and workspace context access;
+- process and session handling;
+- structured observations and logs;
+- safety boundaries and repeatable interfaces.
 
-It is the execution substrate that future agents, external controllers, or coding workflows may use.
+Version 0 is narrower: a controlled foreground command runner with typed requests and structured results.
 
 ## Repository State
 
 - The repo is documentation-only until implementation work is explicitly requested.
-- The current phase is harness design, not production implementation.
+- The current phase is design, not production implementation.
 - Do not add Rust source code, dependencies, CLI scaffolding, or CI unless the task explicitly requests it.
-- Do not invent production behavior that conflicts with `docs/PRODUCT_SPEC.md` or `docs/ARCHITECTURE.md`.
-- Prefer updating the docs first when a requirement, workflow, or architecture assumption changes.
+- Prefer updating docs first when behavior, workflow, or architecture assumptions change.
 
-## Design Boundary
+## Product Boundary
 
-The harness should be designed as a controlled execution broker, not as unrestricted shell access.
+The agent owns:
 
-A normal terminal executes whatever the user types.
+- planning;
+- code generation;
+- deciding which files to edit;
+- interpreting failures;
+- choosing the next action.
 
-This harness must eventually validate, constrain, execute, capture, and log commands in a structured way.
+The Rust tool owns:
 
-The intended future architecture is:
+- controlled workspace access;
+- command execution;
+- process lifecycle control;
+- structured observations;
+- evidence capture;
+- safety boundaries;
+- repeatable interfaces.
 
-```text
-LLM / Agent / External Controller
-   |
-   v
-Rust CLI Harness
-   |
-   +-- command runner
-   +-- process/session manager
-   +-- policy layer
-   +-- workspace boundary manager
-   +-- stdout/stderr capture
-   +-- structured logs
-   +-- timeout/kill controls
-   |
-   v
-Operating System / Repository / Terminal
-```
+## Doc Structure Rule
+
+- `AGENTS.md` should stay between roughly 50 and 200 lines.
+- Topic docs should stay between roughly 50 and 150 lines.
+- If a topic grows too large, split it by subject into a subdirectory such as `docs/security/` or `docs/architecture/`.
+- Avoid numbered overflow files such as `_1` or `_2` unless no clearer subject split exists.
 
 ## Required Reading Order
 
-Before starting any implementation task, read:
+Before starting implementation work, read:
 
 1. `README.md`
 2. `docs/PRODUCT_SPEC.md`
 3. `docs/ARCHITECTURE.md`
-4. `docs/TESTING.md`
-5. `docs/BACKLOG.md`
-6. `docs/DECISIONS.md`
-7. `.github/pull_request_template.md`
+4. `docs/CLI_CONTRACT.md`
+5. `docs/REQUEST_RESPONSE_SCHEMA.md`
+6. `docs/SECURITY_MODEL.md`
+7. `docs/TESTING.md`
+8. `docs/BACKLOG.md`
+9. `docs/DECISIONS.md`
+10. `.github/pull_request_template.md`
 
 ## Task Intake Contract
 
-Every future task must be stated in a form that includes all of the following:
+Every future task must include:
 
-- `Requirement`: one concise statement of the desired behavior or change.
-- `Expected files to change`: exact files or directories expected to be modified.
-- `Tests to run`: concrete validation commands or a justified statement that no automated tests exist yet.
-- `Acceptance criteria`: verifiable outcomes.
-- `PR summary`: a summary written in the repository PR format.
+- `Requirement`
+- `Expected files to change`
+- `Tests to run`
+- `Acceptance criteria`
+- `PR summary`
 
-If any item is missing, the agent should supply a proposed version before coding and use it as the working contract for the task.
+If any item is missing, the agent should propose a concrete version before coding.
 
 ## Required Task Template
-
-Use this template for all future implementation tasks:
 
 ```md
 ## Task
@@ -103,45 +101,24 @@ Use this template for all future implementation tasks:
   - Evidence:
 ```
 
-## Execution Rules For Agents
+## Execution Rules
 
 - Keep changes scoped to the stated requirement.
 - Avoid touching unrelated files.
-- Update documentation when behavior, interfaces, workflow, or architecture changes.
+- Update docs when behavior, interfaces, workflow, or architecture changes.
 - Prefer small, reviewable diffs.
 - Add tests with implementation work whenever practical.
-- If a task conflicts with an existing documented decision, update `docs/DECISIONS.md` as part of the change.
+- Update `docs/DECISIONS.md` when a design choice is added or reversed.
 
 ## Definition Of Done
 
-A task is not complete until all of the following are true:
+A task is not complete until:
 
 - the requirement is satisfied;
-- expected files were the only files changed, or the scope expansion is documented;
-- all listed tests were run, or inability to run them is explained;
-- acceptance criteria are explicitly checked;
+- scope changes are explained;
+- listed tests were run or inability is explained;
+- acceptance criteria are checked;
 - the final summary matches the PR template structure.
-
-## PR Summary Format
-
-Use the existing repository template in `.github/pull_request_template.md`. At minimum, every final task summary should cover:
-
-- `Plan`
-- `Implementation summary`
-- `Evidence`
-- `Security / governance review`
-- `Review checklist`
-
-## When Docs Must Be Updated
-
-Update the following files when applicable:
-
-- `README.md`: repo purpose or setup expectations changed.
-- `docs/PRODUCT_SPEC.md`: user-facing requirements or scope changed.
-- `docs/ARCHITECTURE.md`: component boundaries, data flow, or module contracts changed.
-- `docs/TESTING.md`: required validation strategy changed.
-- `docs/BACKLOG.md`: priority or sequencing changed.
-- `docs/DECISIONS.md`: a design or workflow decision was made, reversed, or superseded.
 
 ## Out Of Scope For This Phase
 
@@ -150,5 +127,5 @@ Until explicitly requested, do not:
 - add production Rust code;
 - add dependencies;
 - scaffold the CLI;
-- implement the execution engine;
+- implement the broker;
 - introduce CI beyond documentation changes.

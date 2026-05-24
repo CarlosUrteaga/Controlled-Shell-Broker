@@ -4,122 +4,90 @@ This file records repository-level decisions and constraints. Update it when a d
 
 ## Decision Log
 
-### D-0001: Documentation-First Repository Start
+### D-0001: Start Documentation-First
 
 - Date: 2026-05-23
 - Status: Accepted
 
-Context:
+The repository started without code and needed a stable operating contract before implementation.
 
-The repository started without code and needed a stable operating contract for future coding-agent sessions.
+Consequence:
 
-Decision:
+- future work begins from explicit requirements instead of ad hoc assumptions.
 
-Create the product, architecture, testing, backlog, and workflow documentation before adding production code.
-
-Consequences:
-
-- future implementation work has a documented baseline;
-- agent sessions can use consistent task framing;
-- early effort is spent on requirements clarity instead of premature code.
-
-### D-0002: Rust CLI Harness As The Initial Product Shape
+### D-0002: Build A Rust Workspace Execution Tool
 
 - Date: 2026-05-23
 - Status: Accepted
 
-Context:
+The product is a Rust-based workspace execution tool for coding agents, not the agent itself.
 
-The project needs a controlled shell execution surface for LLM-assisted development workflows.
+Consequence:
 
-Decision:
+- the tool owns controlled workspace capabilities while the agent owns planning and interpretation.
 
-The initial product will be a Rust-based CLI harness focused on controlled command execution.
-
-Consequences:
-
-- CLI ergonomics and structured outputs are first-class concerns;
-- implementation should remain portable and typed;
-- the repo should avoid coupling to a specific agent runtime.
-
-### D-0003: Version 0 Focuses On `run`, Not Full Autonomy
+### D-0003: Version 0 Starts With Foreground `run`
 
 - Date: 2026-05-23
 - Status: Accepted
 
-Context:
+Version 0 focuses on one foreground `run` operation with structured results, timeout handling, and logging.
 
-The full vision includes policy, sessions, and long-lived process management, but implementation needs a narrow first milestone.
+Consequence:
 
-Decision:
+- the first implementation slice stays small enough to validate well.
 
-Version 0 will focus on a single `run` command with JSON output, timeout support, working directory support, output capture, exit code reporting, and basic logging.
-
-Consequences:
-
-- initial implementation scope stays small enough to test well;
-- later features can extend from a simpler execution contract;
-- backlog sequencing remains explicit.
-
-### D-0004: Every Future Task Must Use A Reproducible Delivery Contract
+### D-0004: Use A Reproducible Task Contract
 
 - Date: 2026-05-23
 - Status: Accepted
 
-Context:
+Every future task must include requirement, expected files, tests, acceptance criteria, and PR summary.
 
-Agent-driven repository work becomes inconsistent when requirements, scope, validation, and final reporting are implied instead of explicit.
+Consequence:
 
-Decision:
+- coding-agent sessions are easier to review and resume.
 
-Every future task must include:
-
-- a clear requirement;
-- expected files to change;
-- tests to run;
-- acceptance criteria;
-- a PR summary format aligned to `.github/pull_request_template.md`.
-
-Consequences:
-
-- coding sessions become easier to review and resume;
-- acceptance becomes more objective;
-- diffs and validation are easier to audit.
-
-### D-0005: The First Implementation Slice Is The CLI Request Boundary
+### D-0005: Make The CLI An Adapter Around Canonical Requests
 
 - Date: 2026-05-23
 - Status: Accepted
 
-Context:
+The first architectural slice is the request boundary. The CLI parses external input and normalizes it into canonical typed requests instead of owning execution logic.
 
-The harness will eventually include execution, policy, logging, and session management, but the first durable interface should be the boundary between external input and internal broker requests.
+Consequence:
 
-Decision:
+- future adapters can reuse the same internal request model.
 
-The first architectural slice is the CLI / Request Interface. The CLI is an adapter that parses external input and normalizes it into a canonical typed `ExecutionRequest`. It should not directly own execution, policy, or logging concerns.
-
-Consequences:
-
-- the system is less tightly coupled to the CLI as the only interface;
-- future adapters such as JSON, MCP, or RPC can reuse the same internal request model;
-- validation, execution, and policy logic can evolve behind a stable request contract.
-
-### D-0006: Command Input Uses `--` And Canonical Vector Arguments
+### D-0006: Use `--` And Canonical Vector Commands
 
 - Date: 2026-05-23
 - Status: Accepted
 
-Context:
+The CLI uses `--` to separate harness arguments from the command payload, and the canonical command representation is `Vec<String>`.
 
-The harness needs a clear boundary between its own flags and the command payload it will later execute.
+Consequence:
 
-Decision:
+- command parsing stays explicit and less ambiguous than shell-string defaults.
 
-The initial CLI should use `--` to separate harness arguments from command arguments, and the canonical internal command representation should be `Vec<String>` rather than a shell string.
+### D-0007: Split Docs By Concern
 
-Consequences:
+- Date: 2026-05-23
+- Status: Accepted
 
-- command payload parsing is more explicit and less ambiguous;
-- request validation is simpler and safer;
-- shell-string execution, if ever supported, can be treated as a distinct mode instead of the default behavior.
+Product behavior, architecture, CLI contract, schema, security model, and roadmap each live in separate source-of-truth documents.
+
+Consequence:
+
+- future sessions are less likely to introduce conflicting behavior across docs.
+
+### D-0008: Keep Docs Small And Split By Subject
+
+- Date: 2026-05-23
+- Status: Accepted
+
+`AGENTS.md` should stay around 50-200 lines, topic docs around 50-150 lines, and oversized topics should be split by subject into subdirectories instead of numbered overflow files.
+
+Consequence:
+
+- docs stay easier to navigate, review, and maintain as the feature set grows.
