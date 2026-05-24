@@ -30,11 +30,11 @@ It is directional, not a delivery commitment.
 - define dangerous-command handling;
 - add approval hooks where needed.
 
-## Phase 3: Workspace Operations
+## Phase 3: Broader Command-Line Operations
 
-- add controlled workspace inspection capabilities;
-- add diff or state-observation primitives;
-- support validation-oriented workflows beyond raw command runs.
+- add richer command execution modes;
+- add stronger execution evidence and validation-oriented workflows;
+- add optional higher-level command-line helpers without changing the core execution contract.
 
 ## Phase 4: Sessions And Process Handles
 

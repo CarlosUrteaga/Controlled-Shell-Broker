@@ -8,7 +8,7 @@ It is not evidence that the protections described here are implemented.
 
 ## Summary
 
-The tool exists to provide controlled workspace access for coding agents, not unrestricted shell access.
+The tool exists to provide controlled command-line access for coding agents, not unrestricted shell access.
 
 Version 0 should improve structure, visibility, and bounded execution. It should not be mistaken for a full sandbox.
 
@@ -16,7 +16,7 @@ This file is the source of truth for v0 safety assumptions and limits.
 
 ## Security Goals
 
-The tool should make agent workspace actions:
+The tool should make command execution actions:
 
 - explicit;
 - bounded;
@@ -37,7 +37,7 @@ The tool should make agent workspace actions:
 ## What Version 0 Does Not Protect Against
 
 - malicious commands intentionally requested by the caller;
-- secret exposure already present in the workspace or environment;
+- secret exposure already present in the selected working directory or inherited environment;
 - destructive file changes performed by an allowed command;
 - network access by spawned processes;
 - privilege escalation beyond the running user;
@@ -49,7 +49,8 @@ The tool should make agent workspace actions:
 - The selected working directory is explicit and required in v0.
 - The effective `cwd` should be explicit in requests and results.
 - `cwd` alone is not a complete containment boundary.
-- Version 0 does not yet define workspace-root allowlists or path jail behavior.
+- Version 0 does not yet define working-directory-root allowlists or path jail behavior.
+- In v0, "workspace" should be read narrowly as the current working directory context in which the command runs.
 
 ## Dangerous Command Assumptions
 
@@ -107,4 +108,4 @@ Version 0 does not provide:
 
 ## Documentation Obligation
 
-Any future task that changes workspace boundaries, timeout behavior, environment handling, logging risk posture, or policy direction must update this file.
+Any future task that changes working-directory boundaries, timeout behavior, environment handling, logging risk posture, or policy direction must update this file.

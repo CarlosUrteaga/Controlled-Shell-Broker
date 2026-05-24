@@ -1,20 +1,19 @@
 # Controlled Shell Broker
 
-`Controlled Shell Broker` is a documentation-first repository for a Rust-based agent workspace execution tool.
+`Controlled Shell Broker` is a documentation-first repository for a Rust-based controlled command-line execution tool.
 
-The tool is not the agent itself. It is the controlled environment through which an agent, script, or human can interact with a repository.
+The tool is not the agent itself. It is the controlled environment through which an agent, script, or human can execute commands through a managed terminal interface.
 
 ## Summary
 
 The long-term system should let an agent:
 
 - run validation and build commands;
-- inspect repository state through controlled interfaces;
 - manage foreground and long-lived processes;
 - capture structured results and evidence;
-- operate within workspace, timeout, and policy boundaries.
+- operate within working-directory, timeout, and policy boundaries.
 
-Version 0 is intentionally smaller: one controlled foreground command execution primitive.
+Version 0 is intentionally smaller: one controlled foreground command execution primitive in an explicit working directory.
 
 ## Current Status
 

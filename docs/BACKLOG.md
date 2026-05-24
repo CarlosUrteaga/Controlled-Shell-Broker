@@ -1,6 +1,6 @@
 # Backlog
 
-This backlog is focused on Version 0 of the Rust-based agent workspace execution tool.
+This backlog is focused on Version 0 of the Rust-based controlled command-line execution tool.
 
 Version 0 should provide the smallest useful execution primitive for a coding agent:
 
@@ -28,7 +28,7 @@ The tool should eventually:
 - return structured JSON;
 - produce a basic machine-readable execution log.
 
-Version 0 is not the full agent workspace tool. It is the first execution primitive required for that tool.
+Version 0 is not the full future tool. It is the first execution primitive required for that tool.
 
 ## Closed Version 0 Contract
 
@@ -44,6 +44,30 @@ The v0 documentation contract is closed on the following points:
 8. Non-zero exit is `failed`; startup or harness failure is `execution_error`.
 9. Timeout is represented by `status: "timed_out"` and `timed_out: true`.
 10. One machine-readable execution evidence record is persisted per run outside the target workspace.
+
+## BashTool Reference Extraction
+
+The TypeScript implementation under `futurework/BashTool/` should be treated as reference material, not as a feature-parity port target.
+
+For Rust v0, extract only concepts that support the first foreground execution primitive:
+
+- CLI request parsing;
+- direct argument-vector command execution;
+- explicit working directory and timeout handling;
+- structured request, result, error, and evidence shapes;
+- basic execution evidence persistence.
+
+Do not expand v0 to match the TypeScript tool's broader features such as:
+
+- background tasks;
+- sessions and process orchestration;
+- permission rule engines;
+- read-only or path heuristics;
+- sandbox UI flows;
+- editor or MCP integrations;
+- patch or edit workflows.
+
+Those belong to later phases only if the Rust tool still needs them after v0 is complete.
 
 ## Recommended First Implementation Task
 

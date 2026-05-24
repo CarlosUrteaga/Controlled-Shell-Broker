@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repository is designed to support repeatable coding-agent sessions for building a Rust-based agent workspace execution tool.
+This repository is designed to support repeatable coding-agent sessions for building a Rust-based controlled command-line execution tool.
 
 Treat this file as the operating contract for future work.
 
@@ -13,7 +13,6 @@ The tool is not the intelligence. The agent decides what to do next.
 The Rust tool should eventually provide:
 
 - controlled command execution;
-- repository and workspace context access;
 - process and session handling;
 - structured observations and logs;
 - safety boundaries and repeatable interfaces.
@@ -39,8 +38,7 @@ The agent owns:
 
 The Rust tool owns:
 
-- controlled workspace access;
-- command execution;
+- controlled command execution in an explicit working directory;
 - process lifecycle control;
 - structured observations;
 - evidence capture;

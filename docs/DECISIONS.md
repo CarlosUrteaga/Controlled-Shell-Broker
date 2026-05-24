@@ -11,12 +11,12 @@ This file records repository-level decisions and constraints. Update it when a d
 The repository started without code and needed a stable operating contract before implementation.
 - future work begins from explicit requirements instead of ad hoc assumptions.
 
-### D-0002: Build A Rust Workspace Execution Tool
+### D-0002: Build A Rust Controlled Command-Line Execution Tool
 
 - Date: 2026-05-23
 - Status: Accepted
-The product is a Rust-based agent workspace execution tool, not the agent itself.
-- the tool owns controlled workspace capabilities while the agent owns planning and interpretation.
+The product is a Rust-based controlled command-line execution tool, not the agent itself.
+- the tool owns controlled command-line capabilities while the agent owns planning and interpretation.
 
 ### D-0003: Version 0 Starts With Foreground `run`
 
@@ -92,8 +92,8 @@ For CLI v0, the adapter generates an opaque `request_id` for each valid request 
 
 - Date: 2026-05-23
 - Status: Accepted
-Each execution that reaches the broker must produce one machine-readable evidence record persisted to a tool-managed location outside the target workspace.
-- v0 provides durable execution evidence without mutating the repository under test by default.
+Each execution that reaches the broker must produce one machine-readable evidence record persisted to a tool-managed location outside the target working directory.
+- v0 provides durable execution evidence without mutating the target working directory by default.
 
 ### D-0014: Inherit Parent Environment In Version 0
 
@@ -101,3 +101,10 @@ Each execution that reaches the broker must produce one machine-readable evidenc
 - Status: Accepted
 Version 0 assumes spawned commands inherit the parent process environment. Environment shaping is deferred to later policy work.
 - the first implementation avoids premature environment-contract design while documenting the security tradeoff explicitly.
+
+### D-0015: Use `futurework/BashTool` As Reference Material, Not A Port Target
+
+- Date: 2026-05-24
+- Status: Accepted
+The TypeScript implementation under `futurework/BashTool/` is a useful reference source for concepts, but Rust v0 should not aim for feature parity with it.
+- v0 stays focused on one foreground execution path instead of inheriting background tasks, permission engines, sandbox flows, or UI-driven orchestration from the TypeScript tool.
