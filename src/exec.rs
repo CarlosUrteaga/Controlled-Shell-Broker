@@ -1,5 +1,7 @@
-use std::process::Command;
-use std::time::Instant;
+use std::io::Read;
+use std::process::{Child, Command, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
 
 use crate::types::{CliOutput, ErrorDetail, ExecutionRequest, ExecutionResponse};
 
@@ -7,30 +9,42 @@ pub fn execute(request: &ExecutionRequest) -> CliOutput {
     let mut command = Command::new(&request.command[0]);
     command.args(&request.command[1..]);
     command.current_dir(&request.cwd);
+    command.stdout(Stdio::piped());
+    command.stderr(Stdio::piped());
 
     let started_at = Instant::now();
-    match command.output() {
-        Ok(output) => {
-            let exit_code = output.status.code();
-            let status = match exit_code {
-                Some(0) => "success",
-                Some(_) | None => "failed",
-            };
-
-            CliOutput::Execution(ExecutionResponse {
+    match command.spawn() {
+        Ok(mut child) => match observe_child(&mut child, request.timeout_seconds, started_at) {
+            Ok(observed) => CliOutput::Execution(ExecutionResponse {
                 request_id: request.request_id.clone(),
                 operation: request.operation.clone(),
-                status: status.to_string(),
+                status: observed.status,
                 cwd: request.cwd.clone(),
                 command: request.command.clone(),
-                exit_code,
-                stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
-                stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+                exit_code: observed.exit_code,
+                stdout: observed.stdout,
+                stderr: observed.stderr,
+                duration_ms: observed.duration_ms,
+                timed_out: observed.timed_out,
+                error: None,
+            }),
+            Err(error) => CliOutput::Execution(ExecutionResponse {
+                request_id: request.request_id.clone(),
+                operation: request.operation.clone(),
+                status: "execution_error".to_string(),
+                cwd: request.cwd.clone(),
+                command: request.command.clone(),
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
                 duration_ms: duration_ms(started_at),
                 timed_out: false,
-                error: None,
-            })
-        }
+                error: Some(ErrorDetail {
+                    code: "process_start_failed".to_string(),
+                    message: format!("The command could not be observed: {error}"),
+                }),
+            }),
+        },
         Err(error) => CliOutput::Execution(ExecutionResponse {
             request_id: request.request_id.clone(),
             operation: request.operation.clone(),
@@ -48,6 +62,83 @@ pub fn execute(request: &ExecutionRequest) -> CliOutput {
             }),
         }),
     }
+}
+
+struct ObservedExecution {
+    status: String,
+    exit_code: Option<i32>,
+    stdout: String,
+    stderr: String,
+    duration_ms: u64,
+    timed_out: bool,
+}
+
+fn observe_child(
+    child: &mut Child,
+    timeout_seconds: u64,
+    started_at: Instant,
+) -> Result<ObservedExecution, std::io::Error> {
+    let stdout_handle = child.stdout.take().map(read_stream);
+    let stderr_handle = child.stderr.take().map(read_stream);
+    let timeout = Duration::from_secs(timeout_seconds);
+
+    let timed_out = loop {
+        if child.try_wait()?.is_some() {
+            break false;
+        }
+
+        if started_at.elapsed() >= timeout {
+            child.kill()?;
+            break true;
+        }
+
+        thread::sleep(Duration::from_millis(10));
+    };
+
+    let exit_code = child.wait()?.code();
+    let stdout = join_reader(stdout_handle)?;
+    let stderr = join_reader(stderr_handle)?;
+    let status = if timed_out {
+        "timed_out".to_string()
+    } else if exit_code == Some(0) {
+        "success".to_string()
+    } else {
+        "failed".to_string()
+    };
+
+    Ok(ObservedExecution {
+        status,
+        exit_code: if timed_out { None } else { exit_code },
+        stdout,
+        stderr,
+        duration_ms: duration_ms(started_at),
+        timed_out,
+    })
+}
+
+fn read_stream<R>(mut stream: R) -> thread::JoinHandle<std::io::Result<Vec<u8>>>
+where
+    R: Read + Send + 'static,
+{
+    thread::spawn(move || {
+        let mut buffer = Vec::new();
+        stream.read_to_end(&mut buffer)?;
+        Ok(buffer)
+    })
+}
+
+fn join_reader(
+    handle: Option<thread::JoinHandle<std::io::Result<Vec<u8>>>>,
+) -> Result<String, std::io::Error> {
+    let Some(handle) = handle else {
+        return Ok(String::new());
+    };
+
+    let bytes = handle
+        .join()
+        .map_err(|_| std::io::Error::other("reader thread panicked"))??;
+
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 
 fn duration_ms(started_at: Instant) -> u64 {
@@ -100,6 +191,46 @@ mod tests {
                 assert_eq!(response.status, "failed");
                 assert_eq!(response.exit_code, Some(1));
                 assert!(response.stdout.is_empty());
+            }
+            other => panic!("expected execution output, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn returns_timed_out_when_command_exceeds_timeout() {
+        let mut request = request(vec!["sleep".to_string(), "2".to_string()]);
+        request.timeout_seconds = 1;
+
+        let output = execute(&request);
+
+        match output {
+            CliOutput::Execution(response) => {
+                assert_eq!(response.status, "timed_out");
+                assert_eq!(response.exit_code, None);
+                assert!(response.timed_out);
+            }
+            other => panic!("expected execution output, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn preserves_partial_output_when_timeout_is_enforced() {
+        let mut request = request(vec![
+            "sh".to_string(),
+            "-c".to_string(),
+            "printf hello; printf world >&2; sleep 2".to_string(),
+        ]);
+        request.timeout_seconds = 1;
+
+        let output = execute(&request);
+
+        match output {
+            CliOutput::Execution(response) => {
+                assert_eq!(response.status, "timed_out");
+                assert_eq!(response.exit_code, None);
+                assert_eq!(response.stdout, "hello");
+                assert_eq!(response.stderr, "world");
+                assert!(response.timed_out);
             }
             other => panic!("expected execution output, got {other:?}"),
         }

@@ -276,4 +276,27 @@ mod tests {
         assert!(json.contains("\"exit_code\":null"));
         assert!(json.contains("\"error\":{\"code\":\"process_start_failed\""));
     }
+
+    #[test]
+    fn timed_out_execution_json_uses_null_exit_code_and_true_flag() {
+        let response = ExecutionResponse {
+            request_id: "req-123".to_string(),
+            operation: "run".to_string(),
+            status: "timed_out".to_string(),
+            cwd: PathBuf::from("/tmp/work"),
+            command: vec!["sleep".to_string(), "2".to_string()],
+            exit_code: None,
+            stdout: "hello".to_string(),
+            stderr: String::new(),
+            duration_ms: 1000,
+            timed_out: true,
+            error: None,
+        };
+
+        let json = response.to_json();
+
+        assert!(json.contains("\"status\":\"timed_out\""));
+        assert!(json.contains("\"exit_code\":null"));
+        assert!(json.contains("\"timed_out\":true"));
+    }
 }
