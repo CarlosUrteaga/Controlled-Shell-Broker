@@ -1,2 +1,20 @@
 .DS_Store
 futurework/*
+
+# Rust build artifacts
+/target/
+debug/
+release/
+
+# Dependency lockfile for libraries; keep if this becomes an application
+Cargo.lock
+
+# Backup files
+*.rs.bk
+*.bak
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
