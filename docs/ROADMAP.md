@@ -28,27 +28,40 @@ It is directional, not a delivery commitment.
 - introduce a policy layer;
 - define allow/deny behavior;
 - define dangerous-command handling;
-- add approval hooks where needed.
+- add approval hooks where needed;
+- define direct-command versus shell-mediated execution policy;
+- define path and working-directory validation rules.
 
-## Phase 3: Broader Command-Line Operations
+## Phase 3: Command Semantics And Evidence
 
-- add richer command execution modes;
-- add stronger execution evidence and validation-oriented workflows;
-- add optional higher-level command-line helpers without changing the core execution contract.
+- interpret command-specific exit semantics where non-zero does not always mean error;
+- enrich execution evidence with normalized statuses and semantic notes;
+- define evidence retention and truncation rules;
+- add stronger validation-oriented workflows without changing the core execution contract.
 
 ## Phase 4: Sessions And Process Handles
 
 - support long-lived processes;
 - add session identifiers or handles;
 - support stop and kill operations;
-- support multiple managed sessions.
+- support multiple managed sessions;
+- define background execution lifecycle and cleanup behavior;
+- define process-group handling and descendant cleanup semantics.
 
-## Phase 5: Agent And Protocol Adapters
+## Phase 5: Sandbox And Execution Modes
+
+- add sandbox profile selection where applicable;
+- define sandbox override rules;
+- document sandbox-caused failure modes;
+- keep execution evidence consistent across execution modes.
+
+## Phase 6: Agent And Protocol Adapters
 
 - add alternate request adapters;
 - support JSON request input;
 - support future MCP, RPC, or HTTP integrations;
-- preserve canonical contracts across adapters.
+- preserve canonical contracts across adapters;
+- add optional editor or integration hooks without changing the core broker contract.
 
 ## Relationship To `BACKLOG.md`
 
