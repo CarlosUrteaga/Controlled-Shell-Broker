@@ -41,6 +41,21 @@ pub struct ExecutionResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutionEvidence {
+    pub event_type: String,
+    pub request_id: String,
+    pub operation: String,
+    pub cwd: PathBuf,
+    pub command: Vec<String>,
+    pub status: String,
+    pub exit_code: Option<i32>,
+    pub duration_ms: u64,
+    pub timed_out: bool,
+    pub timestamp: String,
+    pub error_code: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CliOutput {
     Request(ExecutionRequest),
     Execution(ExecutionResponse),
@@ -168,6 +183,47 @@ impl ExecutionResponse {
     }
 }
 
+impl ExecutionEvidence {
+    pub fn to_json(&self) -> String {
+        let exit_code = self
+            .exit_code
+            .map_or_else(|| "null".to_string(), |value| value.to_string());
+        let error_code = self.error_code.as_ref().map_or_else(
+            || "\"error_code\":null".to_string(),
+            |value| format!("\"error_code\":{}", json_string(value)),
+        );
+
+        format!(
+            concat!(
+                "{{",
+                "\"event_type\":{},",
+                "\"request_id\":{},",
+                "\"operation\":{},",
+                "\"cwd\":{},",
+                "\"command\":{},",
+                "\"status\":{},",
+                "\"exit_code\":{},",
+                "\"duration_ms\":{},",
+                "\"timed_out\":{},",
+                "\"timestamp\":{},",
+                "{}",
+                "}}"
+            ),
+            json_string(&self.event_type),
+            json_string(&self.request_id),
+            json_string(&self.operation),
+            json_string(&self.cwd.to_string_lossy()),
+            json_array(&self.command),
+            json_string(&self.status),
+            exit_code,
+            self.duration_ms,
+            self.timed_out,
+            json_string(&self.timestamp),
+            error_code
+        )
+    }
+}
+
 pub fn invalid_request(
     operation: Option<&str>,
     code: &str,
@@ -184,7 +240,7 @@ pub fn invalid_request(
     }
 }
 
-fn json_array(items: &[String]) -> String {
+pub(crate) fn json_array(items: &[String]) -> String {
     let parts = items
         .iter()
         .map(|item| json_string(item))
@@ -192,7 +248,7 @@ fn json_array(items: &[String]) -> String {
     format!("[{}]", parts.join(","))
 }
 
-fn json_string(value: &str) -> String {
+pub(crate) fn json_string(value: &str) -> String {
     format!("\"{}\"", escape_json(value))
 }
 
@@ -298,5 +354,29 @@ mod tests {
         assert!(json.contains("\"status\":\"timed_out\""));
         assert!(json.contains("\"exit_code\":null"));
         assert!(json.contains("\"timed_out\":true"));
+    }
+
+    #[test]
+    fn evidence_json_omits_stdout_and_stderr() {
+        let evidence = ExecutionEvidence {
+            event_type: "execution.completed".to_string(),
+            request_id: "req-123".to_string(),
+            operation: "run".to_string(),
+            cwd: PathBuf::from("/tmp/work"),
+            command: vec!["echo".to_string(), "hello".to_string()],
+            status: "success".to_string(),
+            exit_code: Some(0),
+            duration_ms: 12,
+            timed_out: false,
+            timestamp: "1716500000000".to_string(),
+            error_code: None,
+        };
+
+        let json = evidence.to_json();
+
+        assert!(json.contains("\"event_type\":\"execution.completed\""));
+        assert!(json.contains("\"timestamp\":\"1716500000000\""));
+        assert!(!json.contains("stdout"));
+        assert!(!json.contains("stderr"));
     }
 }

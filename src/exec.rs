@@ -3,9 +3,19 @@ use std::process::{Child, Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
+use crate::evidence;
 use crate::types::{CliOutput, ErrorDetail, ExecutionRequest, ExecutionResponse};
 
 pub fn execute(request: &ExecutionRequest) -> CliOutput {
+    let response = execute_once(request);
+
+    match evidence::persist(&response) {
+        Ok(_) => CliOutput::Execution(response),
+        Err(error) => CliOutput::Execution(evidence_write_failed(response, error)),
+    }
+}
+
+fn execute_once(request: &ExecutionRequest) -> ExecutionResponse {
     let mut command = Command::new(&request.command[0]);
     command.args(&request.command[1..]);
     command.current_dir(&request.cwd);
@@ -15,7 +25,7 @@ pub fn execute(request: &ExecutionRequest) -> CliOutput {
     let started_at = Instant::now();
     match command.spawn() {
         Ok(mut child) => match observe_child(&mut child, request.timeout_seconds, started_at) {
-            Ok(observed) => CliOutput::Execution(ExecutionResponse {
+            Ok(observed) => ExecutionResponse {
                 request_id: request.request_id.clone(),
                 operation: request.operation.clone(),
                 status: observed.status,
@@ -27,8 +37,8 @@ pub fn execute(request: &ExecutionRequest) -> CliOutput {
                 duration_ms: observed.duration_ms,
                 timed_out: observed.timed_out,
                 error: None,
-            }),
-            Err(error) => CliOutput::Execution(ExecutionResponse {
+            },
+            Err(error) => ExecutionResponse {
                 request_id: request.request_id.clone(),
                 operation: request.operation.clone(),
                 status: "execution_error".to_string(),
@@ -43,9 +53,9 @@ pub fn execute(request: &ExecutionRequest) -> CliOutput {
                     code: "process_start_failed".to_string(),
                     message: format!("The command could not be observed: {error}"),
                 }),
-            }),
+            },
         },
-        Err(error) => CliOutput::Execution(ExecutionResponse {
+        Err(error) => ExecutionResponse {
             request_id: request.request_id.clone(),
             operation: request.operation.clone(),
             status: "execution_error".to_string(),
@@ -60,7 +70,20 @@ pub fn execute(request: &ExecutionRequest) -> CliOutput {
                 code: "process_start_failed".to_string(),
                 message: format!("The command could not be started: {error}"),
             }),
+        },
+    }
+}
+
+fn evidence_write_failed(response: ExecutionResponse, error: std::io::Error) -> ExecutionResponse {
+    ExecutionResponse {
+        status: "execution_error".to_string(),
+        error: Some(ErrorDetail {
+            code: "evidence_write_failed".to_string(),
+            message: format!(
+                "The command ran, but required evidence could not be written: {error}"
+            ),
         }),
+        ..response
     }
 }
 
@@ -253,5 +276,70 @@ mod tests {
             }
             other => panic!("expected execution output, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn writes_one_evidence_record_for_successful_execution() {
+        let request = request(vec!["echo".to_string(), "hello".to_string()]);
+        let evidence_root =
+            std::env::temp_dir().join(format!("llm-shell-exec-test-{}", request.request_id));
+
+        let response = execute_once(&request);
+        let output = match evidence::persist_in_root(&response, &evidence_root) {
+            Ok(_) => CliOutput::Execution(response),
+            Err(error) => CliOutput::Execution(evidence_write_failed(response, error)),
+        };
+
+        match output {
+            CliOutput::Execution(response) => {
+                assert_eq!(response.status, "success");
+                let evidence_dir = evidence_root.join("evidence");
+                let entries = std::fs::read_dir(&evidence_dir)
+                    .expect("evidence directory should exist")
+                    .collect::<Result<Vec<_>, _>>()
+                    .expect("evidence directory should be readable");
+                assert_eq!(entries.len(), 1);
+
+                let file_name = entries[0]
+                    .file_name()
+                    .into_string()
+                    .expect("file name should be valid unicode");
+                assert!(file_name.contains(&request.request_id));
+                assert!(!entries[0].path().starts_with(&request.cwd));
+
+                std::fs::remove_dir_all(&evidence_root)
+                    .expect("evidence directory cleanup should succeed");
+            }
+            other => panic!("expected execution output, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn maps_evidence_write_failures_to_execution_error() {
+        let request = request(vec!["echo".to_string(), "hello".to_string()]);
+        let evidence_root =
+            std::env::temp_dir().join(format!("llm-shell-exec-blocked-{}", request.request_id));
+        std::fs::write(&evidence_root, "not a directory")
+            .expect("test fixture file should be created");
+
+        let response = execute_once(&request);
+        let output = match evidence::persist_in_root(&response, &evidence_root) {
+            Ok(_) => CliOutput::Execution(response),
+            Err(error) => CliOutput::Execution(evidence_write_failed(response, error)),
+        };
+
+        match output {
+            CliOutput::Execution(response) => {
+                assert_eq!(response.status, "execution_error");
+                assert_eq!(response.exit_code, Some(0));
+                assert_eq!(
+                    response.error.as_ref().map(|error| error.code.as_str()),
+                    Some("evidence_write_failed")
+                );
+            }
+            other => panic!("expected execution output, got {other:?}"),
+        }
+
+        std::fs::remove_file(&evidence_root).expect("fixture cleanup should succeed");
     }
 }
