@@ -12,6 +12,8 @@ The tool exists to provide controlled workspace access for coding agents, not un
 
 Version 0 should improve structure, visibility, and bounded execution. It should not be mistaken for a full sandbox.
 
+This file is the source of truth for v0 safety assumptions and limits.
+
 ## Security Goals
 
 The tool should make agent workspace actions:
@@ -26,6 +28,7 @@ The tool should make agent workspace actions:
 
 - malformed requests reaching execution;
 - ambiguity between harness flags and command payload;
+- accidental omission of execution boundaries such as `cwd` or timeout;
 - unbounded command runtime;
 - inconsistent output structures;
 - silent execution without machine-readable logs;
@@ -43,13 +46,15 @@ The tool should make agent workspace actions:
 ## Workspace Boundary Assumptions
 
 - Commands run relative to a selected working directory.
+- The selected working directory is explicit and required in v0.
 - The effective `cwd` should be explicit in requests and results.
 - `cwd` alone is not a complete containment boundary.
-- Future implementation must define whether paths outside an approved workspace root are allowed.
+- Version 0 does not yet define workspace-root allowlists or path jail behavior.
 
 ## Dangerous Command Assumptions
 
 - CLI validation checks request shape, not command safety.
+- Version 0 allows direct executable invocation only; it does not define shell-string execution.
 - Dangerous-command handling belongs to a later policy layer.
 - Future policy should support allowlists, denylists, path restrictions, or approval hooks without changing canonical request shapes.
 
@@ -57,13 +62,14 @@ The tool should make agent workspace actions:
 
 - Timeouts bound runtime, not side effects.
 - A timed-out command may already have changed files or spawned children.
-- Future implementation must define child-process behavior on timeout.
+- Version 0 requires timeout reporting in both the result and the evidence record.
+- Version 0 should attempt to terminate the spawned command path on timeout, but it does not promise full descendant cleanup semantics.
 - Timeout results must be visible in structured output and logs.
 
 ## Environment And Secret Handling
 
 - Environment variables may contain secrets.
-- Future implementation must define whether commands inherit the parent environment by default.
+- Version 0 assumes the spawned command inherits the parent environment unless a later policy surface changes that behavior.
 - Logs and structured results should avoid recording secrets unless explicitly required.
 - Environment handling should become an explicit policy surface later.
 
@@ -71,6 +77,8 @@ The tool should make agent workspace actions:
 
 - Logs may capture sensitive command arguments, paths, stdout, or stderr.
 - Machine-readable logging improves traceability but increases retention risk.
+- Version 0 requires one persisted machine-readable execution record per run.
+- Version 0 evidence must be stored outside the target workspace in a tool-managed location.
 - Future log design should separate operational metadata from high-risk payload content when practical.
 
 ## Human Approval Assumptions
@@ -78,6 +86,24 @@ The tool should make agent workspace actions:
 - Version 0 does not define a full human approval workflow.
 - Later policy layers may require approval for specific commands, paths, or modes.
 - The architecture should preserve enough metadata for external review before execution.
+
+## Security Posture Summary
+
+Version 0 provides:
+
+- explicit request boundaries;
+- explicit `cwd` and timeout inputs;
+- direct argument-vector execution;
+- structured JSON results;
+- persisted machine-readable execution evidence.
+
+Version 0 does not provide:
+
+- command safety policy;
+- secret isolation;
+- network isolation;
+- filesystem sandboxing;
+- session governance.
 
 ## Documentation Obligation
 

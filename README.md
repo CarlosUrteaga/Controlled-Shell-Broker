@@ -1,6 +1,6 @@
 # Controlled Shell Broker
 
-`Controlled Shell Broker` is a documentation-first repository for a Rust-based workspace execution tool for coding agents.
+`Controlled Shell Broker` is a documentation-first repository for a Rust-based agent workspace execution tool.
 
 The tool is not the agent itself. It is the controlled environment through which an agent, script, or human can interact with a repository.
 
@@ -14,7 +14,7 @@ The long-term system should let an agent:
 - capture structured results and evidence;
 - operate within workspace, timeout, and policy boundaries.
 
-Version 0 starts with one primitive: controlled foreground command execution.
+Version 0 is intentionally smaller: one controlled foreground command execution primitive.
 
 ## Current Status
 
@@ -36,11 +36,11 @@ Not included yet:
 ## Repository Guide
 
 - [AGENTS.md](AGENTS.md): operating contract for future coding-agent sessions.
-- [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md): product behavior and scope.
+- [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md): product behavior and v0 scope.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): system structure and boundaries.
-- [docs/CLI_CONTRACT.md](docs/CLI_CONTRACT.md): caller-facing CLI behavior.
-- [docs/REQUEST_RESPONSE_SCHEMA.md](docs/REQUEST_RESPONSE_SCHEMA.md): canonical shapes.
-- [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md): safety assumptions and limits.
+- [docs/CLI_CONTRACT.md](docs/CLI_CONTRACT.md): source of truth for caller-facing CLI behavior.
+- [docs/REQUEST_RESPONSE_SCHEMA.md](docs/REQUEST_RESPONSE_SCHEMA.md): source of truth for request, response, error, event, and status shapes.
+- [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md): source of truth for v0 safety assumptions.
 - [docs/ROADMAP.md](docs/ROADMAP.md): phased evolution.
 - [docs/TESTING.md](docs/TESTING.md): validation expectations.
 - [docs/BACKLOG.md](docs/BACKLOG.md): near-term design tasks.
@@ -56,10 +56,17 @@ Every future task must define:
 - acceptance criteria;
 - a PR summary in the repository format.
 
-## Initial CLI Goal
+## Version 0 Contract
 
 ```bash
 llm-shell run --cwd ./repo --timeout 30 -- cargo test
 ```
 
-That command is the first slice of the broader workspace execution tool vision.
+Version 0 means:
+
+- one foreground command per request;
+- explicit `--cwd` and `--timeout`;
+- stdout and stderr captured separately;
+- exit code, duration, and status returned as JSON;
+- one machine-readable execution evidence record per run;
+- no sessions, MCP, policy engine, or autonomous planning.

@@ -8,7 +8,7 @@ It is not evidence that the system is implemented.
 
 ## Summary
 
-This project provides a Rust-based workspace execution tool for coding agents.
+This project provides a Rust-based agent workspace execution tool.
 
 The tool gives an LLM-driven coding agent controlled access to repository operations needed to build features, validate changes, and return structured observations.
 
@@ -16,7 +16,7 @@ The tool is not the agent itself. It is the controlled environment through which
 
 ## Core Product Concept
 
-The tool should support an agent development loop:
+The long-term tool should support an agent development loop:
 
 1. receive a task or feature-building intention;
 2. inspect repository state through controlled interfaces;
@@ -48,11 +48,11 @@ Secondary users include human developers, reviewers, operators, and automation t
 ## Version 0 Goals
 
 1. Accept a well-formed foreground `run` request.
-2. Execute one command within a selected working directory.
+2. Execute exactly one command within an explicit working directory.
 3. Capture stdout, stderr, exit code, duration, and status.
-4. Enforce a caller-specified timeout.
+4. Enforce an explicit caller-specified timeout.
 5. Return structured JSON output.
-6. Produce a machine-readable execution log.
+6. Persist one machine-readable execution evidence record per run.
 7. Establish the foundation for later policy, sessions, and richer workspace operations.
 
 ## Non-Goals For Version 0
@@ -79,12 +79,14 @@ Secondary users include human developers, reviewers, operators, and automation t
 
 - The tool must validate malformed requests before execution.
 - The tool must execute one foreground command per run request.
+- The tool must require an explicit working directory and explicit timeout in the CLI contract.
 - The tool must run the command relative to the selected working directory.
+- The tool must invoke the command directly from a canonical argument vector rather than a shell string.
 - The tool must capture stdout separately from stderr.
 - The tool must report exit code when available.
 - The tool must report wall-clock duration and execution status.
 - The tool must expose timeout results in structured output.
-- The tool must produce machine-readable logs distinct from user-facing output.
+- The tool must persist machine-readable execution evidence distinct from user-facing output.
 
 ## Product Constraints
 
@@ -101,6 +103,20 @@ Secondary users include human developers, reviewers, operators, and automation t
 - policy and approval hooks;
 - richer structured logs and evidence;
 - alternate adapters such as JSON, MCP, RPC, or HTTP.
+
+## Version 0 Contract Summary
+
+Version 0 is closed around one operation:
+
+- CLI: `run`
+- command model: argument vector after `--`
+- execution mode: foreground only
+- working directory: explicit and required
+- timeout: explicit and required
+- output: JSON result
+- evidence: one persisted machine-readable event per execution
+
+This document defines product intent and boundaries. It does not redefine the exact CLI, schema, or safety contract from the source-of-truth documents.
 
 ## Documentation Obligation
 

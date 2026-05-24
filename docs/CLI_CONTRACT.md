@@ -37,19 +37,24 @@ Everything before `--` belongs to the harness CLI. Everything after `--` belongs
 ## Supported Flags
 
 ```text
---cwd <PATH>         Working directory for command execution
---timeout <SECONDS>  Maximum command duration
---output json        Output format; JSON is the default in v0
+--cwd <PATH>         Required working directory for command execution
+--timeout <SECONDS>  Required maximum command duration
+--output json        Output format; JSON is the only supported v0 value
 ```
 
 ## Input Rules
 
 - Harness flags must appear before `--`.
 - Command arguments must appear after `--`.
+- `--cwd` is required in v0.
+- `--timeout` is required in v0.
 - The command payload must not be empty.
 - `--timeout` must be numeric and positive.
+- `--cwd` must refer to an existing directory.
 - Unknown harness flags should produce a structured invalid-request response.
-- JSON should be the default output mode.
+- `json` is the default and only supported v0 output mode.
+- The command payload is passed as an argument vector, not a shell string.
+- Version 0 does not support shell-mediated execution modes.
 
 ## Valid Examples
 
@@ -74,7 +79,10 @@ The CLI should reject malformed requests before execution.
 
 Malformed requests include:
 
+- missing `--cwd`;
+- missing `--timeout`;
 - missing command payload;
+- nonexistent or invalid `cwd`;
 - invalid timeout value;
 - unsupported operation;
 - unsupported output format;
@@ -88,6 +96,8 @@ These are request-validation failures, not policy decisions.
 The CLI should normalize raw input into canonical request types and serialize canonical result types returned by the broker.
 
 The canonical command form should be a vector of arguments, not a shell string.
+
+For valid requests, the adapter should generate an opaque `request_id` before handing the request to the broker.
 
 Detailed request and response shapes live in [docs/REQUEST_RESPONSE_SCHEMA.md](REQUEST_RESPONSE_SCHEMA.md).
 
@@ -108,3 +118,10 @@ execution_error
 The CLI owns syntax, raw argument parsing, basic shape validation, request normalization, and final response serialization.
 
 It does not own process spawning, policy enforcement, workspace authorization, timeout implementation, stdout/stderr capture, or log persistence.
+
+## Version 0 Notes
+
+- Version 0 defines one operation only: `run`.
+- One request maps to one foreground command execution.
+- Non-zero process exit is a command result, not a CLI parsing error.
+- Evidence persistence is required by v0 but is not configured through the CLI contract yet.
