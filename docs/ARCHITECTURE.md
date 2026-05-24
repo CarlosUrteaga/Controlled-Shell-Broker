@@ -190,7 +190,7 @@ The first CLI surface should be intentionally small.
 Recommended first command:
 
 ```bash
-harness run --cwd ./repo --timeout 30 -- cargo test
+llm-shell run --cwd ./repo --timeout 30 -- cargo test
 ```
 
 The `--` separator is important because it clearly separates harness arguments from the command that should be executed.
@@ -198,12 +198,12 @@ The `--` separator is important because it clearly separates harness arguments f
 For example:
 
 ```bash
-harness run --cwd ./repo --timeout 60 -- cargo test --all
+llm-shell run --cwd ./repo --timeout 60 -- cargo test --all
 ```
 
 In this example:
 
-- `harness run` belongs to the harness CLI;
+- `llm-shell run` belongs to the harness CLI;
 - `--cwd ./repo` configures the execution context;
 - `--timeout 60` configures the maximum execution duration;
 - everything after `--` is the command payload.
@@ -300,7 +300,7 @@ The CLI should follow these input rules:
 Example invalid request:
 
 ```bash
-harness run --cwd ./repo --timeout 30
+llm-shell run --cwd ./repo --timeout 30
 ```
 
 Reason:
@@ -396,23 +396,23 @@ The architecture should leave room for additional interfaces that produce the sa
 Possible future extensions:
 
 ```bash
-harness run-json < request.json
+llm-shell run-json < request.json
 ```
 
 ```bash
-harness validate-request < request.json
+llm-shell validate-request < request.json
 ```
 
 ```bash
-harness session start api --cwd ./repo -- npm run dev
+llm-shell session start api --cwd ./repo -- npm run dev
 ```
 
 ```bash
-harness session stop api
+llm-shell session stop api
 ```
 
 ```bash
-harness session logs api
+llm-shell session logs api
 ```
 
 These future interfaces should not bypass the canonical request model.

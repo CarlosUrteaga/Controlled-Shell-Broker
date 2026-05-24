@@ -59,7 +59,7 @@ Future implementation work should start by reading `AGENTS.md` and the documents
 The first production milestone remains:
 
 ```bash
-llm-shell run --cwd ./repo --timeout 30 "cargo test"
+llm-shell run --cwd ./repo --timeout 30 -- cargo test
 ```
 
 Expected `v0` behavior is documented in [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md). No implementation has been started yet.
