@@ -143,3 +143,10 @@ Version 0 uses generic process semantics only: exit code `0` is `success`, non-z
 - Status: Accepted
 `execution_error` responses preserve the standard result envelope when possible and include an `error` object; `stdout` and `stderr` are empty strings when no process started.
 - callers can consume one stable result shape across success, failure, timeout, and harness-level execution failure cases.
+
+### D-0021: Expose Parsed v0 Requests As Structured JSON Before Broker Execution Exists
+
+- Date: 2026-05-24
+- Status: Accepted
+The first Rust implementation slice stops at adapter parsing and validation. Valid `run` inputs are normalized into the canonical `ExecutionRequest` shape and printed as structured JSON instead of being executed.
+- the request boundary becomes testable immediately while execution, timeout enforcement, and evidence persistence remain separate follow-on tasks.
