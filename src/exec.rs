@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 use crate::evidence;
 use crate::policy::{self, PolicyContext, PolicyDecision};
-use crate::types::{CliOutput, ErrorDetail, ExecutionRequest, ExecutionResponse};
+use crate::types::{denied_execution, CliOutput, ErrorDetail, ExecutionRequest, ExecutionResponse};
 
 pub fn execute(request: &ExecutionRequest, policy_context: &PolicyContext) -> CliOutput {
     execute_with_policy(request, policy_context, policy::evaluate)
@@ -21,6 +21,7 @@ where
 {
     match evaluate(request, policy_context) {
         PolicyDecision::Allow => persist_execution(execute_once(request)),
+        PolicyDecision::Deny(denied) => CliOutput::Execution(denied_execution(request, denied)),
     }
 }
 
@@ -344,6 +345,40 @@ mod tests {
                 assert_eq!(
                     response.error.as_ref().map(|error| error.code.as_str()),
                     Some("process_start_failed")
+                );
+            }
+            other => panic!("expected execution output, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn returns_structured_denied_response_without_spawning() {
+        let output = execute_with_policy(
+            &request(vec!["definitely-not-a-real-command".to_string()]),
+            &policy_context(),
+            |_request, _context| {
+                PolicyDecision::Deny(crate::types::DeniedExecution {
+                    code: "denied_executable".to_string(),
+                    message: "The request was denied by broker policy.".to_string(),
+                })
+            },
+        );
+
+        match output {
+            CliOutput::Execution(response) => {
+                assert_eq!(response.status, "denied");
+                assert_eq!(response.exit_code, None);
+                assert!(response.stdout.is_empty());
+                assert!(response.stderr.is_empty());
+                assert_eq!(response.duration_ms, 0);
+                assert!(!response.timed_out);
+                assert_eq!(
+                    response.error.as_ref().map(|error| error.code.as_str()),
+                    Some("denied_executable")
+                );
+                assert_eq!(
+                    response.error.as_ref().map(|error| error.message.as_str()),
+                    Some("The request was denied by broker policy.")
                 );
             }
             other => panic!("expected execution output, got {other:?}"),

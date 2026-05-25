@@ -41,6 +41,12 @@ pub struct ExecutionResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeniedExecution {
+    pub code: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionEvidence {
     pub event_type: String,
     pub request_id: String,
@@ -77,7 +83,7 @@ impl CliOutput {
             Self::Execution(response) => match response.status.as_str() {
                 "success" => 0,
                 "failed" => response.exit_code.unwrap_or(1),
-                "timed_out" | "execution_error" => 1,
+                "timed_out" | "denied" | "execution_error" => 1,
                 _ => 1,
             },
             Self::InvalidRequest(_) => 2,
@@ -224,6 +230,25 @@ impl ExecutionEvidence {
     }
 }
 
+pub fn denied_execution(request: &ExecutionRequest, denied: DeniedExecution) -> ExecutionResponse {
+    ExecutionResponse {
+        request_id: request.request_id.clone(),
+        operation: request.operation.clone(),
+        status: "denied".to_string(),
+        cwd: request.cwd.clone(),
+        command: request.command.clone(),
+        exit_code: None,
+        stdout: String::new(),
+        stderr: String::new(),
+        duration_ms: 0,
+        timed_out: false,
+        error: Some(ErrorDetail {
+            code: denied.code,
+            message: denied.message,
+        }),
+    }
+}
+
 pub fn invalid_request(
     operation: Option<&str>,
     code: &str,
@@ -334,6 +359,36 @@ mod tests {
     }
 
     #[test]
+    fn denied_execution_json_uses_standard_envelope() {
+        let request = ExecutionRequest {
+            request_id: "req-123".to_string(),
+            operation: "run".to_string(),
+            cwd: PathBuf::from("/tmp/work"),
+            timeout_seconds: 30,
+            command: vec!["rm".to_string(), "-rf".to_string(), ".".to_string()],
+            mode: "foreground".to_string(),
+            output_format: "json".to_string(),
+        };
+        let response = denied_execution(
+            &request,
+            DeniedExecution {
+                code: "denied_executable".to_string(),
+                message: "The request was denied by broker policy.".to_string(),
+            },
+        );
+
+        let json = response.to_json();
+
+        assert!(json.contains("\"status\":\"denied\""));
+        assert!(json.contains("\"exit_code\":null"));
+        assert!(json.contains("\"stdout\":\"\""));
+        assert!(json.contains("\"stderr\":\"\""));
+        assert!(json.contains("\"duration_ms\":0"));
+        assert!(json.contains("\"timed_out\":false"));
+        assert!(json.contains("\"error\":{\"code\":\"denied_executable\""));
+    }
+
+    #[test]
     fn timed_out_execution_json_uses_null_exit_code_and_true_flag() {
         let response = ExecutionResponse {
             request_id: "req-123".to_string(),
@@ -378,5 +433,27 @@ mod tests {
         assert!(json.contains("\"timestamp\":\"1716500000000\""));
         assert!(!json.contains("stdout"));
         assert!(!json.contains("stderr"));
+    }
+
+    #[test]
+    fn denied_cli_output_uses_exit_code_one() {
+        let request = ExecutionRequest {
+            request_id: "req-123".to_string(),
+            operation: "run".to_string(),
+            cwd: PathBuf::from("/tmp/work"),
+            timeout_seconds: 30,
+            command: vec!["rm".to_string()],
+            mode: "foreground".to_string(),
+            output_format: "json".to_string(),
+        };
+        let output = CliOutput::Execution(denied_execution(
+            &request,
+            DeniedExecution {
+                code: "denied_executable".to_string(),
+                message: "The request was denied by broker policy.".to_string(),
+            },
+        ));
+
+        assert_eq!(output.exit_code(), 1);
     }
 }

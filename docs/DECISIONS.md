@@ -192,3 +192,11 @@ The first approved workspace root for version 1 policy is the broker startup `cw
 PR 2 introduces a broker policy seam that evaluates every valid request before subprocess spawn, while returning only `allow`.
 - the startup workspace root is resolved and canonicalized once, then passed into policy evaluation as broker context.
 - if broker startup working-directory resolution fails after request validation, the result temporarily reuses `process_start_failed` for compatibility even though the failure is broker setup rather than literal process start.
+
+### D-0027: Represent Policy Rejection As A Structured Execution Result
+
+- Date: 2026-05-25
+- Status: Accepted
+PR 3 maps broker policy rejection into the standard execution-result envelope with `status: "denied"` and an `error` object carrying the policy reason.
+- denied responses use `exit_code: null`, empty `stdout` and `stderr`, `duration_ms: 0`, and `timed_out: false`, and the CLI exits with code `1`.
+- the denial result path short-circuits subprocess spawn and stays distinct from `invalid_request` and `execution_error`.
