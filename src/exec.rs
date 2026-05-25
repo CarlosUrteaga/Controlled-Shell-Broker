@@ -386,6 +386,50 @@ mod tests {
     }
 
     #[test]
+    fn denies_request_outside_workspace_root_before_process_spawn() {
+        let workspace_root =
+            std::env::temp_dir().join(format!("llm-shell-policy-root-{}", std::process::id()));
+        let outside =
+            std::env::temp_dir().join(format!("llm-shell-policy-outside-{}", std::process::id()));
+        std::fs::create_dir_all(&workspace_root).expect("workspace root should be created");
+        std::fs::create_dir_all(&outside).expect("outside directory should be created");
+
+        let request = ExecutionRequest {
+            request_id: "req-outside-root".to_string(),
+            operation: "run".to_string(),
+            cwd: outside
+                .canonicalize()
+                .expect("outside directory should canonicalize"),
+            timeout_seconds: 30,
+            command: vec!["definitely-not-a-real-command".to_string()],
+            mode: "foreground".to_string(),
+            output_format: "json".to_string(),
+        };
+        let policy_context = PolicyContext {
+            workspace_root: workspace_root
+                .canonicalize()
+                .expect("workspace root should canonicalize"),
+        };
+
+        let output = execute(&request, &policy_context);
+
+        match output {
+            CliOutput::Execution(response) => {
+                assert_eq!(response.status, "denied");
+                assert_eq!(response.exit_code, None);
+                assert_eq!(
+                    response.error.as_ref().map(|error| error.code.as_str()),
+                    Some("cwd_outside_workspace_root")
+                );
+            }
+            other => panic!("expected execution output, got {other:?}"),
+        }
+
+        std::fs::remove_dir_all(&workspace_root).expect("workspace root cleanup should succeed");
+        std::fs::remove_dir_all(&outside).expect("outside directory cleanup should succeed");
+    }
+
+    #[test]
     fn writes_one_evidence_record_for_successful_execution() {
         let request = request(vec!["echo".to_string(), "hello".to_string()]);
         let evidence_root =

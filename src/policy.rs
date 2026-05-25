@@ -21,8 +21,15 @@ pub(crate) fn build_context(startup_cwd: PathBuf) -> io::Result<PolicyContext> {
     })
 }
 
-pub(crate) fn evaluate(_request: &ExecutionRequest, _context: &PolicyContext) -> PolicyDecision {
-    PolicyDecision::Allow
+pub(crate) fn evaluate(request: &ExecutionRequest, context: &PolicyContext) -> PolicyDecision {
+    if request.cwd.starts_with(&context.workspace_root) {
+        PolicyDecision::Allow
+    } else {
+        PolicyDecision::Deny(DeniedExecution {
+            code: "cwd_outside_workspace_root".to_string(),
+            message: "The request cwd is outside the broker startup workspace root.".to_string(),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -52,27 +59,78 @@ mod tests {
         fs::remove_dir_all(&root).expect("temp test directory cleanup should succeed");
     }
 
-    #[test]
-    fn evaluate_allows_valid_requests_in_pr_2() {
-        let request = ExecutionRequest {
+    fn request(cwd: PathBuf) -> ExecutionRequest {
+        ExecutionRequest {
             request_id: "req-policy-test".to_string(),
             operation: "run".to_string(),
-            cwd: PathBuf::from(".")
-                .canonicalize()
-                .expect("current directory should resolve"),
+            cwd,
             timeout_seconds: 30,
             command: vec!["echo".to_string(), "hello".to_string()],
             mode: "foreground".to_string(),
             output_format: "json".to_string(),
-        };
+        }
+    }
+
+    #[test]
+    fn evaluate_allows_workspace_root_itself() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
         let context = PolicyContext {
-            workspace_root: std::env::current_dir()
-                .expect("current directory should resolve")
-                .canonicalize()
-                .expect("current directory should canonicalize"),
+            workspace_root: workspace_root.clone(),
         };
 
-        assert_eq!(evaluate(&request, &context), PolicyDecision::Allow);
+        assert_eq!(
+            evaluate(&request(workspace_root), &context),
+            PolicyDecision::Allow
+        );
+    }
+
+    #[test]
+    fn evaluate_allows_descendant_of_workspace_root() {
+        let root = temp_dir("descendant");
+        let child = root.join("child");
+        fs::create_dir_all(&child).expect("descendant directory should be created");
+        let context = PolicyContext {
+            workspace_root: root.canonicalize().expect("root should canonicalize"),
+        };
+
+        assert_eq!(
+            evaluate(
+                &request(child.canonicalize().expect("child should canonicalize")),
+                &context
+            ),
+            PolicyDecision::Allow
+        );
+
+        fs::remove_dir_all(&root).expect("temp test directory cleanup should succeed");
+    }
+
+    #[test]
+    fn evaluate_denies_cwd_outside_workspace_root() {
+        let root = temp_dir("inside");
+        let outside = temp_dir("outside");
+        fs::create_dir_all(&root).expect("workspace root should be created");
+        fs::create_dir_all(&outside).expect("outside directory should be created");
+        let context = PolicyContext {
+            workspace_root: root.canonicalize().expect("root should canonicalize"),
+        };
+
+        assert_eq!(
+            evaluate(
+                &request(outside.canonicalize().expect("outside should canonicalize")),
+                &context
+            ),
+            PolicyDecision::Deny(DeniedExecution {
+                code: "cwd_outside_workspace_root".to_string(),
+                message: "The request cwd is outside the broker startup workspace root."
+                    .to_string(),
+            })
+        );
+
+        fs::remove_dir_all(&root).expect("temp test directory cleanup should succeed");
+        fs::remove_dir_all(&outside).expect("temp test directory cleanup should succeed");
     }
 
     #[test]

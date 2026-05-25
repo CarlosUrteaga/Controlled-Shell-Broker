@@ -200,3 +200,11 @@ PR 2 introduces a broker policy seam that evaluates every valid request before s
 PR 3 maps broker policy rejection into the standard execution-result envelope with `status: "denied"` and an `error` object carrying the policy reason.
 - denied responses use `exit_code: null`, empty `stdout` and `stderr`, `duration_ms: 0`, and `timed_out: false`, and the CLI exits with code `1`.
 - the denial result path short-circuits subprocess spawn and stays distinct from `invalid_request` and `execution_error`.
+
+### D-0028: Enforce Workspace-Root Authorization In Policy
+
+- Date: 2026-05-25
+- Status: Accepted
+PR 4 makes the broker startup workspace root the first active deny rule in policy.
+- the root path itself and descendant paths are allowed, while valid canonicalized paths outside that root are denied with `cwd_outside_workspace_root`.
+- malformed or unresolvable `--cwd` remains `invalid_request` in CLI validation and is not reclassified as policy denial.
