@@ -238,6 +238,8 @@ Denied requests must not spawn a subprocess.
 
 The CLI exit code for `denied` is fixed at `1`.
 
+When policy returns `denied`, the CLI prints the denied execution envelope as JSON and exits with code `1`.
+
 ## Evidence Persistence Semantics
 
 Version 0 requires one persisted execution-evidence record per execution attempt that reaches the broker.

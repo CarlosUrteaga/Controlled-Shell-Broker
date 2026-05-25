@@ -92,6 +92,7 @@ Rules:
 - denied responses preserve the standard execution result envelope and include an `error` object
 - denied responses use `exit_code: null`, empty `stdout` and `stderr`, `duration_ms: 0`, and `timed_out: false`
 - denied requests must not execute the command payload
+- denied CLI serialization uses the same execution-result JSON shape as other command results
 
 ## `ExecutionError`
 

@@ -2,7 +2,7 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use crate::types::ExecutionRequest;
+use crate::types::{DeniedExecution, ExecutionRequest};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PolicyContext {
@@ -12,6 +12,7 @@ pub(crate) struct PolicyContext {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum PolicyDecision {
     Allow,
+    Deny(DeniedExecution),
 }
 
 pub(crate) fn build_context(startup_cwd: PathBuf) -> io::Result<PolicyContext> {
@@ -72,5 +73,21 @@ mod tests {
         };
 
         assert_eq!(evaluate(&request, &context), PolicyDecision::Allow);
+    }
+
+    #[test]
+    fn deny_decision_can_carry_structured_reason() {
+        let decision = PolicyDecision::Deny(DeniedExecution {
+            code: "denied_executable".to_string(),
+            message: "The request was denied by broker policy.".to_string(),
+        });
+
+        assert_eq!(
+            decision,
+            PolicyDecision::Deny(DeniedExecution {
+                code: "denied_executable".to_string(),
+                message: "The request was denied by broker policy.".to_string(),
+            })
+        );
     }
 }
