@@ -150,3 +150,12 @@ Version 0 uses generic process semantics only: exit code `0` is `success`, non-z
 - Status: Accepted
 The first Rust implementation slice stops at adapter parsing and validation. Valid `run` inputs are normalized into the canonical `ExecutionRequest` shape and printed as structured JSON instead of being executed.
 - the request boundary becomes testable immediately while execution, timeout enforcement, and evidence persistence remain separate follow-on tasks.
+
+### D-0022: Use A Temporary Harness-Owned Directory For Initial v0 Evidence Storage
+
+- Date: 2026-05-24
+- Status: Accepted
+Version 0 stores execution evidence outside the target working directory under a harness-owned state directory, and the initial implementation uses the operating system temporary directory under `llm-shell/evidence`.
+- this satisfies the v0 boundary requirement that evidence must not be written into the target workspace while deferring durable, user-configurable retention until after v0.
+- v0 evidence is available after execution but may be removed by operating-system temporary-directory cleanup.
+- future versions may move evidence to a platform-specific state directory or support explicit configuration.
