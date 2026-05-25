@@ -1,5 +1,6 @@
 .DS_Store
 futurework/*
+.env
 
 # Rust build artifacts
 /target/
