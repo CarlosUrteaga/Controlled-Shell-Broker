@@ -111,6 +111,8 @@ The initial workspace-root rule treats the broker startup `cwd`, canonicalized o
 
 The root path itself is allowed. Descendant paths are allowed. Requests outside that root are denied with `cwd_outside_workspace_root`.
 
+This workspace-root restriction is the first implemented deny rule in version 1.
+
 The initial denied-executable rule family uses reason-specific code `denied_executable`. The concrete exact-basename denylist is defined in the implementation slice that adds the rule.
 
 These are admission rules, not runtime interpretation rules.

@@ -389,6 +389,32 @@ mod tests {
     }
 
     #[test]
+    fn denied_execution_preserves_workspace_root_denial_code() {
+        let request = ExecutionRequest {
+            request_id: "req-123".to_string(),
+            operation: "run".to_string(),
+            cwd: PathBuf::from("/tmp/outside"),
+            timeout_seconds: 30,
+            command: vec!["pwd".to_string()],
+            mode: "foreground".to_string(),
+            output_format: "json".to_string(),
+        };
+        let response = denied_execution(
+            &request,
+            DeniedExecution {
+                code: "cwd_outside_workspace_root".to_string(),
+                message: "The request cwd is outside the broker startup workspace root."
+                    .to_string(),
+            },
+        );
+
+        assert_eq!(
+            response.error.as_ref().map(|error| error.code.as_str()),
+            Some("cwd_outside_workspace_root")
+        );
+    }
+
+    #[test]
     fn timed_out_execution_json_uses_null_exit_code_and_true_flag() {
         let response = ExecutionResponse {
             request_id: "req-123".to_string(),

@@ -52,6 +52,7 @@ The tool should make command execution actions:
 - In v0, "workspace" should be read narrowly as the current working directory context in which the command runs.
 - Version 1 adds a broker policy rule that treats the broker startup `cwd`, canonicalized once, as the first approved workspace root.
 - A valid request whose canonicalized `cwd` lies outside that root is denied before execution rather than reclassified as malformed input.
+- This workspace-root restriction is the first active admission-control boundary in version 1. It does not sandbox filesystem access after an allowed command starts.
 
 ## Dangerous Command Assumptions
 
