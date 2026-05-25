@@ -42,6 +42,7 @@ Not included yet:
 - [docs/REQUEST_RESPONSE_SCHEMA.md](docs/REQUEST_RESPONSE_SCHEMA.md): source of truth for request, response, error, event, and status shapes.
 - [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md): source of truth for v0 safety assumptions.
 - [docs/V0_ACCEPTANCE.md](docs/V0_ACCEPTANCE.md): canonical smoke checks and expected outcomes for the implemented v0 primitive.
+- [docs/POLICY_MODEL.md](docs/POLICY_MODEL.md): post-v0 admission-control model for broker-layer policy decisions.
 - [docs/ROADMAP.md](docs/ROADMAP.md): phased evolution.
 - [docs/TESTING.md](docs/TESTING.md): validation expectations.
 - [docs/BACKLOG.md](docs/BACKLOG.md): near-term design tasks.

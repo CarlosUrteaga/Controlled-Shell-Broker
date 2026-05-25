@@ -26,10 +26,11 @@ Use [docs/V0_ACCEPTANCE.md](V0_ACCEPTANCE.md) as the canonical v0 completion che
 
 ## Next Phase 2: Basic Policy
 
+- use [docs/POLICY_MODEL.md](POLICY_MODEL.md) as the source of truth for broker-layer admission control;
 - introduce a policy seam with documented allow and deny behavior;
 - define dangerous-command handling expectations;
 - define path and working-directory restrictions beyond simple existence checks;
-- add approval hooks only when the policy contract is explicit.
+- keep approval hooks designed but unimplemented until a later phase expands scope explicitly.
 
 ## Future Phase 3: Evidence And Command Semantics
 
