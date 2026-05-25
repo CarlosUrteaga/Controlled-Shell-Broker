@@ -26,8 +26,12 @@ The remaining backlog begins after the execution primitive.
 
 ### Policy And Admission Control
 
-- define allow and deny policy inputs;
-- decide where approval hooks sit in the broker path;
+The next concrete post-v0 work item is the policy model defined in [docs/POLICY_MODEL.md](POLICY_MODEL.md).
+
+Near-term follow-up:
+
+- implement documented `allow` and `deny` admission behavior without changing v0 request validation;
+- preserve `require_approval` as a designed future outcome without implementing approval hooks in the next slice;
 - specify working-directory root restrictions beyond simple `cwd` validation;
 - document environment-shaping rules if v1 changes inherited environment behavior.
 

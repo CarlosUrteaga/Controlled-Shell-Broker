@@ -159,3 +159,12 @@ Version 0 stores execution evidence outside the target working directory under a
 - this satisfies the v0 boundary requirement that evidence must not be written into the target workspace while deferring durable, user-configurable retention until after v0.
 - v0 evidence is available after execution but may be removed by operating-system temporary-directory cleanup.
 - future versions may move evidence to a platform-specific state directory or support explicit configuration.
+
+### D-0023: Introduce Policy As Broker-Layer Admission Control After Version 0
+
+- Date: 2026-05-24
+- Status: Accepted
+Post-v0 policy is a broker-layer admission-control concern that runs after request validation and before command execution.
+- policy may inspect canonical request metadata such as command vector, `cwd`, operation, timeout, environment assumptions, and future caller metadata.
+- policy must not execute commands, interpret command output, mutate files, or replace request validation.
+- the model includes `allow`, `deny`, and a future `require_approval` outcome, but approval hooks are designed only and are not part of the next implementation slice.
