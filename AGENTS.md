@@ -21,10 +21,10 @@ Version 0 is narrower: run one foreground command inside an explicit working dir
 
 ## Repository State
 
-- The repo is documentation-only until implementation work is explicitly requested.
-- The current phase is design, not production implementation.
-- Do not add Rust source code, dependencies, CLI scaffolding, or CI unless the task explicitly requests it.
-- Prefer updating docs first when behavior, workflow, or architecture assumptions change.
+- The repo now includes an implemented version 0 Rust CLI and foreground execution path.
+- The current phase is post-v0 hardening and phased expansion, not greenfield scaffolding.
+- Do not assume broad new features are in scope; follow the current roadmap and backlog phase boundaries.
+- Prefer updating docs alongside code when behavior, workflow, or architecture assumptions change.
 
 ## Product Boundary
 
@@ -111,6 +111,7 @@ If any item is missing, the agent should propose a concrete version before codin
 - Treat `docs/CLI_CONTRACT.md` as the caller-facing CLI source of truth.
 - Treat `docs/REQUEST_RESPONSE_SCHEMA.md` as the schema source of truth.
 - Treat `docs/SECURITY_MODEL.md` as the v0 safety source of truth.
+- Treat `docs/POLICY_MODEL.md` as the source of truth for the next post-v0 policy phase.
 
 ## Definition Of Done
 
@@ -126,8 +127,8 @@ A task is not complete until:
 
 Until explicitly requested, do not:
 
-- add production Rust code;
-- add dependencies;
-- scaffold the CLI;
-- implement the broker;
-- introduce CI beyond documentation changes.
+- add sessions or background process orchestration beyond the documented roadmap phase;
+- add MCP, JSON-RPC, HTTP, or other adapter surfaces before the broker contract needs them;
+- add approval workflows or interactive policy UI before the policy phase explicitly includes them;
+- expand into code-editing, diff-analysis, or agent-planning behavior;
+- introduce CI or automation changes unrelated to the stated task.

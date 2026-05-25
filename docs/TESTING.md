@@ -2,11 +2,11 @@
 
 ## Status
 
-No production code exists yet. This document defines the validation standard for future tasks.
+Version 0 production code and automated tests now exist. This document defines the validation standard for maintaining the implemented foreground execution path and for future post-v0 tasks.
 
 ## Testing Goals
 
-Future implementation should prove:
+Implementation and future changes should prove:
 
 - commands execute in the intended working directory;
 - stdout and stderr are captured correctly;
@@ -58,12 +58,12 @@ Use when needed for:
 - inspecting emitted logs;
 - validating behavior with representative shell commands.
 
-Representative future commands:
+Representative commands:
 
 ```bash
-cargo run -- run --cwd . --timeout 5 "pwd"
-cargo run -- run --cwd . --timeout 5 "echo hello"
-cargo run -- run --cwd . --timeout 1 "sleep 5"
+cargo run -- run --cwd . --timeout 5 -- pwd
+cargo run -- run --cwd . --timeout 5 -- echo hello
+cargo run -- run --cwd . --timeout 1 -- sleep 5
 ```
 
 ## Task-Level Validation Contract
@@ -74,7 +74,7 @@ Every future task must explicitly list:
 - whether those commands are unit, integration, lint, format, or manual validation;
 - what outcome is expected from each command.
 
-If no automated tests exist yet for a task, the task must still provide:
+If a task does not add or update automated tests, it must still provide:
 
 - the reason no tests exist;
 - the minimum manual validation commands required;
