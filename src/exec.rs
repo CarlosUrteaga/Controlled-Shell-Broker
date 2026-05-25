@@ -4,11 +4,27 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::evidence;
+use crate::policy::{self, PolicyContext, PolicyDecision};
 use crate::types::{CliOutput, ErrorDetail, ExecutionRequest, ExecutionResponse};
 
-pub fn execute(request: &ExecutionRequest) -> CliOutput {
-    let response = execute_once(request);
+pub fn execute(request: &ExecutionRequest, policy_context: &PolicyContext) -> CliOutput {
+    execute_with_policy(request, policy_context, policy::evaluate)
+}
 
+fn execute_with_policy<F>(
+    request: &ExecutionRequest,
+    policy_context: &PolicyContext,
+    evaluate: F,
+) -> CliOutput
+where
+    F: FnOnce(&ExecutionRequest, &PolicyContext) -> PolicyDecision,
+{
+    match evaluate(request, policy_context) {
+        PolicyDecision::Allow => persist_execution(execute_once(request)),
+    }
+}
+
+fn persist_execution(response: ExecutionResponse) -> CliOutput {
     match evidence::persist(&response) {
         Ok(_) => CliOutput::Execution(response),
         Err(error) => CliOutput::Execution(evidence_write_failed(response, error)),
@@ -171,7 +187,9 @@ fn duration_ms(started_at: Instant) -> u64 {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
     use std::path::PathBuf;
+    use std::rc::Rc;
 
     use super::*;
 
@@ -189,9 +207,21 @@ mod tests {
         }
     }
 
+    fn policy_context() -> PolicyContext {
+        PolicyContext {
+            workspace_root: std::env::current_dir()
+                .expect("current directory should resolve")
+                .canonicalize()
+                .expect("current directory should canonicalize"),
+        }
+    }
+
     #[test]
     fn executes_direct_command_and_captures_stdout() {
-        let output = execute(&request(vec!["echo".to_string(), "hello".to_string()]));
+        let output = execute(
+            &request(vec!["echo".to_string(), "hello".to_string()]),
+            &policy_context(),
+        );
 
         match output {
             CliOutput::Execution(response) => {
@@ -207,7 +237,7 @@ mod tests {
 
     #[test]
     fn maps_non_zero_exit_to_failed() {
-        let output = execute(&request(vec!["false".to_string()]));
+        let output = execute(&request(vec!["false".to_string()]), &policy_context());
 
         match output {
             CliOutput::Execution(response) => {
@@ -224,7 +254,7 @@ mod tests {
         let mut request = request(vec!["sleep".to_string(), "2".to_string()]);
         request.timeout_seconds = 1;
 
-        let output = execute(&request);
+        let output = execute(&request, &policy_context());
 
         match output {
             CliOutput::Execution(response) => {
@@ -245,7 +275,7 @@ mod tests {
         ]);
         request.timeout_seconds = 1;
 
-        let output = execute(&request);
+        let output = execute(&request, &policy_context());
 
         match output {
             CliOutput::Execution(response) => {
@@ -260,8 +290,50 @@ mod tests {
     }
 
     #[test]
+    fn evaluates_policy_before_spawning_process() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
+        let context = PolicyContext {
+            workspace_root: workspace_root.clone(),
+        };
+        let was_called = Rc::new(RefCell::new(false));
+        let captured_root = Rc::new(RefCell::new(None::<PathBuf>));
+        let called_ref = Rc::clone(&was_called);
+        let captured_ref = Rc::clone(&captured_root);
+
+        let output = execute_with_policy(
+            &request(vec!["echo".to_string(), "hello".to_string()]),
+            &context,
+            move |_request, context| {
+                *called_ref.borrow_mut() = true;
+                *captured_ref.borrow_mut() = Some(context.workspace_root.clone());
+                PolicyDecision::Allow
+            },
+        );
+
+        assert!(
+            *was_called.borrow(),
+            "policy evaluator should run before spawn"
+        );
+        assert_eq!(*captured_root.borrow(), Some(workspace_root));
+
+        match output {
+            CliOutput::Execution(response) => {
+                assert_eq!(response.status, "success");
+                assert_eq!(response.stdout, "hello\n");
+            }
+            other => panic!("expected execution output, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn maps_start_failures_to_execution_error() {
-        let output = execute(&request(vec!["definitely-not-a-real-command".to_string()]));
+        let output = execute(
+            &request(vec!["definitely-not-a-real-command".to_string()]),
+            &policy_context(),
+        );
 
         match output {
             CliOutput::Execution(response) => {

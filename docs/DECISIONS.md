@@ -184,3 +184,11 @@ Version 1 policy rejection is a broker-level result with caller-visible `status:
 The first approved workspace root for version 1 policy is the broker startup `cwd`, canonicalized once.
 - workspace authorization is policy, not CLI validation: invalid or unresolvable `--cwd` remains `invalid_request`, while a valid resolved `cwd` outside the startup root is `denied` with reason code `cwd_outside_workspace_root`.
 - denied requests produce machine-readable evidence, and `require_approval` remains documented but unimplemented in version 1.
+
+### D-0026: Add An Allow-By-Default Policy Checkpoint Before Spawn
+
+- Date: 2026-05-25
+- Status: Accepted
+PR 2 introduces a broker policy seam that evaluates every valid request before subprocess spawn, while returning only `allow`.
+- the startup workspace root is resolved and canonicalized once, then passed into policy evaluation as broker context.
+- if broker startup working-directory resolution fails after request validation, the result temporarily reuses `process_start_failed` for compatibility even though the failure is broker setup rather than literal process start.
