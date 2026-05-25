@@ -2,7 +2,7 @@
 
 ## Status
 
-This document defines the caller-facing CLI contract for version 0.
+This document defines the caller-facing CLI contract for version 0 and version 1 policy admission control.
 
 It is not evidence that the CLI is implemented.
 
@@ -91,6 +91,8 @@ Malformed requests include:
 
 These are request-validation failures, not policy decisions.
 
+Valid requests may still be rejected later by broker policy with `status: "denied"`.
+
 ## Working Directory Semantics
 
 `--cwd` is required in v0.
@@ -120,6 +122,12 @@ Expected error code:
 ```text
 invalid_cwd
 ```
+
+Version 1 adds a separate policy rule for workspace authorization.
+
+If `--cwd` resolves successfully but falls outside the canonicalized broker startup workspace root, the request is not malformed. The broker must reject it as `denied` with error code `cwd_outside_workspace_root`.
+
+This workspace-root restriction is policy, not CLI validation.
 
 ## Timeout Semantics
 
@@ -194,9 +202,47 @@ For schema stability, `execution_error` responses should keep the normal result 
 
 If partial stdout or stderr exists, it may be included. If no process was started, stdout and stderr should be empty strings.
 
+## Policy Denial Semantics
+
+`denied` is reserved for broker-level policy rejection after request validation and before command startup.
+
+Examples include:
+
+- a valid `cwd` outside the approved workspace root;
+- a denied executable selected by policy.
+
+`denied` is different from `invalid_request` and `execution_error`.
+
+Denied responses keep the standard execution result envelope:
+
+```json
+{
+  "request_id": "opaque-request-id",
+  "operation": "run",
+  "status": "denied",
+  "cwd": "./repo",
+  "command": ["rm", "-rf", "."],
+  "exit_code": null,
+  "stdout": "",
+  "stderr": "",
+  "duration_ms": 0,
+  "timed_out": false,
+  "error": {
+    "code": "denied_executable",
+    "message": "The request was denied by broker policy."
+  }
+}
+```
+
+Denied requests must not spawn a subprocess.
+
+The CLI exit code for `denied` is fixed at `1`.
+
 ## Evidence Persistence Semantics
 
 Version 0 requires one persisted execution-evidence record per execution attempt that reaches the broker.
+
+Version 1 extends this requirement to policy denials that reach the broker and are rejected before process spawn.
 
 Evidence records must be written outside the target working directory selected by `--cwd`.
 
@@ -229,7 +275,7 @@ The v0 evidence record should include:
 - timestamp;
 - error code when applicable.
 
-Full stdout and stderr persistence is not required in v0.
+Full stdout and stderr persistence is not required in v0 or in version 1 denial evidence.
 
 ## Request And Response Boundary
 
@@ -243,12 +289,13 @@ Detailed request and response shapes live in [docs/REQUEST_RESPONSE_SCHEMA.md](R
 
 ## Status Vocabulary
 
-Version 0 uses:
+Version 1 uses:
 
 ```text
 success
 failed
 timed_out
+denied
 invalid_request
 execution_error
 ```
@@ -264,6 +311,7 @@ Version 0 uses only generic process semantics:
 - exit code `0` maps to `success`;
 - non-zero exit code maps to `failed`;
 - timeout maps to `timed_out`;
+- policy rejection maps to `denied`;
 - malformed request maps to `invalid_request`;
 - harness-level process or evidence failure maps to `execution_error`.
 
@@ -281,3 +329,4 @@ It does not own process spawning, policy enforcement, workspace authorization, t
 - One request maps to one foreground command execution.
 - Non-zero process exit is a command result, not a CLI parsing error.
 - Evidence persistence is required by v0 but is not configured through the CLI contract yet.
+- Version 1 does not add new CLI flags for policy or approval.

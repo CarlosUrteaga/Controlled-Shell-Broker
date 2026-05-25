@@ -10,9 +10,9 @@ It is not evidence that the protections described here are implemented.
 
 The tool exists to provide controlled command-line access for coding agents, not unrestricted shell access.
 
-Version 0 should improve structure, visibility, and bounded execution. It should not be mistaken for a full sandbox.
+Version 0 improves structure, visibility, and bounded execution. Version 1 adds broker-layer admission control. Neither version should be mistaken for a full sandbox.
 
-This file is the source of truth for v0 safety assumptions and limits.
+This file is the source of truth for version 0 safety assumptions and the initial version 1 policy boundary.
 
 ## Security Goals
 
@@ -49,15 +49,16 @@ The tool should make command execution actions:
 - The selected working directory is explicit and required in v0.
 - The effective `cwd` should be explicit in requests and results.
 - `cwd` alone is not a complete containment boundary.
-- Version 0 does not yet define working-directory-root allowlists or path jail behavior.
 - In v0, "workspace" should be read narrowly as the current working directory context in which the command runs.
+- Version 1 adds a broker policy rule that treats the broker startup `cwd`, canonicalized once, as the first approved workspace root.
+- A valid request whose canonicalized `cwd` lies outside that root is denied before execution rather than reclassified as malformed input.
 
 ## Dangerous Command Assumptions
 
 - CLI validation checks request shape, not command safety.
 - Version 0 allows direct executable invocation only; it does not define shell-string execution.
-- Dangerous-command handling belongs to a later policy layer.
-- Future policy should support allowlists, denylists, path restrictions, or approval hooks without changing canonical request shapes.
+- Version 1 adds the first denied-executable policy surface.
+- Future policy may add more allowlists, denylists, path restrictions, or approval hooks without changing canonical request shapes.
 
 ## Timeout Assumptions
 
@@ -90,6 +91,7 @@ This is a known v0 limitation and should be revisited before adding long-lived s
 - Machine-readable logging improves traceability but increases retention risk.
 - Version 0 requires one persisted machine-readable execution record per run.
 - Version 0 evidence must be stored outside the target workspace in a tool-managed location.
+- Version 1 denied requests also persist machine-readable evidence even though no subprocess starts.
 - Future log design should separate operational metadata from high-risk payload content when practical.
 
 ## Evidence Logging Risk
@@ -98,9 +100,12 @@ Version 0 evidence records should avoid persisting full stdout and stderr by def
 
 The CLI response may return stdout and stderr to the caller, but persisted evidence should prioritize metadata unless a later logging policy explicitly allows output capture.
 
+Version 1 denied evidence should record request metadata and denial reason without persisting stdout or stderr.
+
 ## Human Approval Assumptions
 
 - Version 0 does not define a full human approval workflow.
+- Version 1 still does not implement approval workflows.
 - Later policy layers may require approval for specific commands, paths, or modes.
 - The architecture should preserve enough metadata for external review before execution.
 
@@ -121,6 +126,12 @@ Version 0 does not provide:
 - network isolation;
 - filesystem sandboxing;
 - session governance.
+
+Version 1 additionally provides:
+
+- broker-level denial before process spawn for disallowed requests;
+- workspace-root restriction as policy rather than CLI validation;
+- machine-readable denial evidence.
 
 ## Documentation Obligation
 

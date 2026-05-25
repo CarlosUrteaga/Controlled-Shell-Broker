@@ -10,7 +10,7 @@ It is not evidence that these types are implemented.
 
 This file is the source of truth for request, result, error, event, and status shapes shared across CLI adapters, broker components, and future protocol adapters.
 
-The field names below define the v0 canonical contract. Product and architecture docs should reference this file instead of duplicating the shapes.
+The field names below define the canonical contract through version 1 policy admission control. Product and architecture docs should reference this file instead of duplicating the shapes.
 
 ## `ExecutionRequest`
 
@@ -62,6 +62,36 @@ Rules:
 - `exit_code`: `null` when no exit code is available, including timeout or startup failure cases
 - `stdout` and `stderr`: captured separately, possibly empty
 - `timed_out`: `true` only for timeout results
+
+## `DeniedExecutionResult`
+
+Broker-level policy rejection:
+
+```json
+{
+  "request_id": "generated-or-provided-id",
+  "operation": "run",
+  "status": "denied",
+  "cwd": "./repo",
+  "command": ["rm", "-rf", "."],
+  "exit_code": null,
+  "stdout": "",
+  "stderr": "",
+  "duration_ms": 0,
+  "timed_out": false,
+  "error": {
+    "code": "denied_executable",
+    "message": "The request was denied by broker policy."
+  }
+}
+```
+
+Rules:
+
+- `denied` means the request was valid but rejected by broker policy before process spawn
+- denied responses preserve the standard execution result envelope and include an `error` object
+- denied responses use `exit_code: null`, empty `stdout` and `stderr`, `duration_ms: 0`, and `timed_out: false`
+- denied requests must not execute the command payload
 
 ## `ExecutionError`
 
@@ -116,9 +146,33 @@ Rules:
 - The event is machine-readable execution evidence, separate from the caller JSON result.
 - Version 0 requires persistence to a tool-managed location outside the target workspace.
 - Version 0 evidence should prioritize metadata over full stdout and stderr persistence.
-- Version 0 does not define additional policy, approval, or session event shapes.
+- Version 1 adds `execution.denied` for policy rejections before process spawn.
 
-## Required v0 Error Codes
+## `DeniedExecutionEvent`
+
+```json
+{
+  "event_type": "execution.denied",
+  "request_id": "generated-or-provided-id",
+  "operation": "run",
+  "cwd": "./repo",
+  "command": ["rm", "-rf", "."],
+  "status": "denied",
+  "exit_code": null,
+  "duration_ms": 0,
+  "timed_out": false,
+  "timestamp": "2026-05-25T00:00:00Z",
+  "error_code": "denied_executable"
+}
+```
+
+Rules:
+
+- one denied event is persisted for each request denied by policy
+- denied events are written to the same broker-managed evidence location as execution-completed events
+- denied events record request metadata and denial reason without persisting stdout or stderr
+
+## Required Error Codes
 
 ```text
 missing_cwd
@@ -132,6 +186,8 @@ unsupported_operation
 invalid_argument_shape
 process_start_failed
 evidence_write_failed
+cwd_outside_workspace_root
+denied_executable
 ```
 
 ## Status Vocabulary
@@ -140,6 +196,7 @@ evidence_write_failed
 success
 failed
 timed_out
+denied
 invalid_request
 execution_error
 ```
@@ -150,6 +207,7 @@ execution_error
 success            exit_code == 0
 failed             process completed with non-zero exit code
 timed_out          timeout reached before completion
+denied             request rejected by broker policy before process spawn
 invalid_request    request rejected before execution
 execution_error    harness-level execution or evidence failure
 ```
