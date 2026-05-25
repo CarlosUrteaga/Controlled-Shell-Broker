@@ -1,18 +1,19 @@
 # Roadmap
 
-This roadmap describes the intended phased evolution of the tool.
+This roadmap describes phased evolution after the implemented version 0 execution primitive.
 
-It is directional, not a delivery commitment.
+Version 0 is complete: the tool can validate and execute one foreground command in an explicit working directory, enforce a timeout, return structured JSON, and persist metadata-only execution evidence outside the target workspace.
 
-## Phase 0: Documentation-Only Design
+Use [docs/V0_ACCEPTANCE.md](V0_ACCEPTANCE.md) as the canonical v0 completion checklist.
 
-- define product scope and boundaries;
-- define architecture, CLI, schema, and security docs;
-- define testing and workflow standards.
+## Completed Phase 0: Documentation And Contract Design
 
-## Phase 1: Version 0 Foreground Execution
+- defined product scope and agent/tool boundaries;
+- defined architecture, CLI, schema, security, testing, and workflow docs.
 
-- implement the Rust CLI entry point;
+## Completed Phase 1: Version 0 Foreground Execution
+
+- implemented the Rust CLI entry point;
 - parse `run` requests;
 - validate basic request shape;
 - normalize input into canonical request types;
@@ -21,48 +22,40 @@ It is directional, not a delivery commitment.
 - capture stdout and stderr;
 - report exit code, duration, and status;
 - return structured JSON;
-- persist basic execution evidence.
+- persist basic metadata-only execution evidence.
 
-## Phase 2: Basic Policy
+## Next Phase 2: Basic Policy
 
-- introduce a policy layer;
-- define allow/deny behavior;
-- define dangerous-command handling;
-- add approval hooks where needed;
-- define direct-command versus shell-mediated execution policy;
-- define path and working-directory validation rules.
+- introduce a policy seam with documented allow and deny behavior;
+- define dangerous-command handling expectations;
+- define path and working-directory restrictions beyond simple existence checks;
+- add approval hooks only when the policy contract is explicit.
 
-## Phase 3: Command Semantics And Evidence
+## Future Phase 3: Evidence And Command Semantics
 
-- interpret command-specific exit semantics where non-zero does not always mean error;
-- enrich execution evidence with normalized statuses and semantic notes;
-- define evidence retention and truncation rules;
-- add stronger validation-oriented workflows without changing the core execution contract.
+- enrich evidence retention and storage rules;
+- decide whether durable state storage replaces temp-directory evidence;
+- add command-semantic interpretation only if generic process semantics become insufficient.
 
-## Phase 4: Sessions And Process Handles
+## Future Phase 4: Sessions And Process Handles
 
 - support long-lived processes;
 - add session identifiers or handles;
 - support stop and kill operations;
-- support multiple managed sessions;
-- define background execution lifecycle and cleanup behavior;
-- define process-group handling and descendant cleanup semantics.
+- define descendant cleanup semantics beyond the current direct-child timeout behavior.
 
-## Phase 5: Sandbox And Execution Modes
+## Future Phase 5: Sandbox And Execution Modes
 
 - add sandbox profile selection where applicable;
-- define sandbox override rules;
-- document sandbox-caused failure modes;
-- keep execution evidence consistent across execution modes.
+- define sandbox override rules and failure modes;
+- preserve consistent evidence across execution modes.
 
-## Phase 6: Agent And Protocol Adapters
+## Future Phase 6: Agent And Protocol Adapters
 
-- add alternate request adapters;
-- support JSON request input;
-- support future MCP, RPC, or HTTP integrations;
-- preserve canonical contracts across adapters;
-- add optional editor or integration hooks without changing the core broker contract.
+- add alternate request adapters when justified by stable broker contracts;
+- evaluate JSON request input;
+- defer MCP, JSON-RPC, and HTTP until they are needed without changing the v0 execution contract.
 
 ## Relationship To `BACKLOG.md`
 
-`ROADMAP.md` defines phases. `BACKLOG.md` defines concrete next design tasks.
+`ROADMAP.md` defines the phase sequence after v0. `BACKLOG.md` tracks concrete work that starts after the completed execution primitive.

@@ -1,6 +1,6 @@
 # Controlled Shell Broker
 
-`Controlled Shell Broker` is a documentation-first repository for a Rust-based controlled command-line execution tool.
+`Controlled Shell Broker` is a Rust-based controlled command-line execution tool with an implemented version 0 foreground execution primitive.
 
 The tool is not the agent itself. It is the controlled environment through which an agent, script, or human can execute commands through a managed terminal interface.
 
@@ -17,20 +17,21 @@ Version 0 is intentionally smaller: one controlled foreground command execution 
 
 ## Current Status
 
-The repository is still documentation-only.
+Implemented now:
 
-Included now:
-
-- product and architecture docs;
-- CLI and schema contracts;
-- security, roadmap, testing, backlog, and decisions;
-- workflow rules for future coding-agent sessions.
+- the Rust CLI for `run`;
+- request validation for `--cwd`, `--timeout`, and `--`;
+- one foreground command execution path;
+- structured JSON results for `success`, `failed`, `execution_error`, and `timed_out`;
+- metadata-only execution evidence stored outside the target workspace;
+- product, architecture, CLI, schema, security, roadmap, testing, backlog, and decisions docs.
 
 Not included yet:
 
-- Rust crate scaffolding;
-- CLI implementation;
-- production code for execution, policy, logging, or sessions.
+- policy rules or approval workflows;
+- sessions or background process management;
+- MCP, JSON-RPC, or HTTP adapters;
+- code-editing or diff-analysis features.
 
 ## Repository Guide
 
@@ -40,6 +41,7 @@ Not included yet:
 - [docs/CLI_CONTRACT.md](docs/CLI_CONTRACT.md): source of truth for caller-facing CLI behavior.
 - [docs/REQUEST_RESPONSE_SCHEMA.md](docs/REQUEST_RESPONSE_SCHEMA.md): source of truth for request, response, error, event, and status shapes.
 - [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md): source of truth for v0 safety assumptions.
+- [docs/V0_ACCEPTANCE.md](docs/V0_ACCEPTANCE.md): canonical smoke checks and expected outcomes for the implemented v0 primitive.
 - [docs/ROADMAP.md](docs/ROADMAP.md): phased evolution.
 - [docs/TESTING.md](docs/TESTING.md): validation expectations.
 - [docs/BACKLOG.md](docs/BACKLOG.md): near-term design tasks.
@@ -69,3 +71,5 @@ Version 0 means:
 - exit code, duration, and status returned as JSON;
 - one machine-readable execution evidence record per run;
 - no sessions, MCP, policy engine, or autonomous planning.
+
+Use [docs/V0_ACCEPTANCE.md](docs/V0_ACCEPTANCE.md) for the canonical release-readiness checklist and smoke commands.

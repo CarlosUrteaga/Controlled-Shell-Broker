@@ -1,140 +1,59 @@
 # Backlog
 
-This backlog is focused on Version 0 of the Rust-based controlled command-line execution tool.
+This backlog starts after the completed version 0 execution primitive.
 
-Version 0 should provide the smallest useful execution primitive for a coding agent:
+Version 0 is no longer an open implementation target. The canonical proof of completion is [docs/V0_ACCEPTANCE.md](V0_ACCEPTANCE.md).
 
-> Run one foreground command inside a controlled workspace, capture the result, return structured JSON, and record basic execution evidence.
+## Version 0 Completion Status
 
-The project is still documentation-first. Implementation work should begin only after the v0 contract is stable enough to guide a coding-agent session without requiring architectural invention.
+Completed in the current implementation:
 
-## Version 0 Goal
+- `run --cwd <PATH> --timeout <SECONDS> -- <COMMAND> [ARGS...]`;
+- request validation for required flags and argument shape;
+- one foreground command execution path;
+- structured JSON result mapping for `success`, `failed`, `execution_error`, and `timed_out`;
+- metadata-only evidence persistence outside the target workspace.
 
-Enable a coding agent, human developer, or script to call the tool with a command such as:
+Version 0 follow-up for release readiness:
 
-```bash
-llm-shell run --cwd ./repo --timeout 30 -- cargo test
-```
+- keep the smoke checks in [docs/V0_ACCEPTANCE.md](V0_ACCEPTANCE.md) passing;
+- keep caller-facing behavior aligned with [docs/CLI_CONTRACT.md](CLI_CONTRACT.md);
+- keep canonical result and evidence shapes aligned with [docs/REQUEST_RESPONSE_SCHEMA.md](REQUEST_RESPONSE_SCHEMA.md).
 
-The tool should eventually:
+## Post-v0 Backlog
 
-- parse the request;
-- validate the request shape;
-- run one foreground command;
-- apply the selected working directory;
-- enforce a timeout;
-- capture stdout and stderr separately;
-- report exit code and duration;
-- return structured JSON;
-- produce a basic machine-readable execution log.
+The remaining backlog begins after the execution primitive.
 
-Version 0 is not the full future tool. It is the first execution primitive required for that tool.
+### Policy And Admission Control
 
-## Closed Version 0 Contract
+- define allow and deny policy inputs;
+- decide where approval hooks sit in the broker path;
+- specify working-directory root restrictions beyond simple `cwd` validation;
+- document environment-shaping rules if v1 changes inherited environment behavior.
 
-The v0 documentation contract is closed on the following points:
+### Evidence And Retention
 
-1. `--cwd` is required.
-2. `--timeout` is required and must be positive.
-3. The command must appear after the `--` separator.
-4. The canonical command model is an argument vector.
-5. Shell-string execution is out of scope for v0.
-6. The adapter generates `request_id` for valid CLI requests.
-7. Environment inheritance is the default v0 assumption.
-8. Non-zero exit is `failed`; startup or harness failure is `execution_error`.
-9. Timeout is represented by `status: "timed_out"` and `timed_out: true`.
-10. One machine-readable execution evidence record is persisted per run outside the target workspace.
+- decide whether evidence moves from the temp directory to a durable state directory;
+- define retention and cleanup expectations;
+- document any future output-capture policy beyond metadata-only evidence.
 
-## BashTool Reference Extraction
+### Process Lifecycle
 
-The TypeScript implementation under `futurework/BashTool/` should be treated as reference material, not as a feature-parity port target.
+- add explicit process-group handling if descendant cleanup becomes required;
+- design long-lived sessions and stop or kill semantics only after the foreground path stays stable.
 
-For Rust v0, extract only concepts that support the first foreground execution primitive:
+### Adapter Expansion
 
-- CLI request parsing;
-- direct argument-vector command execution;
-- explicit working directory and timeout handling;
-- structured request, result, error, and evidence shapes;
-- basic execution evidence persistence.
+- evaluate JSON request input only after the CLI contract remains stable;
+- defer MCP, JSON-RPC, and HTTP adapters until the broker contract needs them.
 
-Do not expand v0 to match the TypeScript tool's broader features such as:
+## Excluded From This Backlog Slice
 
-- background tasks;
-- sessions and process orchestration;
-- permission rule engines;
-- read-only or path heuristics;
-- sandbox UI flows;
-- editor or MCP integrations;
-- patch or edit workflows.
+Do not reopen version 0 scope by adding:
 
-Those belong to later phases only if the Rust tool still needs them after v0 is complete.
+- sessions before post-v0 lifecycle design exists;
+- policy engine behavior without a documented phase change;
+- MCP, JSON-RPC, or HTTP transport work;
+- diff analysis, editor integration, or code-editing behavior.
 
-## Recommended First Implementation Task
-
-The first implementation task should be intentionally small.
-
-```md
-## Task
-
-- Requirement:
-  Scaffold the Rust CLI and implement request parsing plus structured invalid-request responses for the v0 `run` command without executing commands yet.
-
-- Expected files to change:
-  - `Cargo.toml`
-  - `src/main.rs`
-  - `src/cli.rs`
-  - `src/types.rs`
-  - `docs/DECISIONS.md`
-
-- Tests to run:
-  - `cargo test`
-  - `cargo run -- run --cwd . --timeout 30 -- cargo test`
-
-- Acceptance criteria:
-  - [ ] The CLI accepts `run --cwd <PATH> --timeout <SECONDS> -- <COMMAND> [ARGS...]`.
-  - [ ] The CLI requires both `--cwd` and `--timeout`.
-  - [ ] The CLI rejects missing command payloads.
-  - [ ] The CLI rejects nonexistent working directories.
-  - [ ] The CLI rejects invalid timeout values.
-  - [ ] The CLI converts valid input into a typed v0 request structure.
-  - [ ] The parsed command is observable through a test or placeholder structured response.
-  - [ ] No command execution occurs yet.
-  - [ ] Documentation is updated if the implemented CLI shape differs from the contract.
-
-- PR summary:
-  - What changed:
-  - Why this approach:
-  - Evidence:
-```
-
-The second implementation task should add foreground command execution, timeout handling, and structured command results.
-
-The third implementation task should add persisted execution evidence.
-
-## Deferred Until After Version 0
-
-The backlog should not expand beyond the v0 execution primitive. Broader future phases belong in [docs/ROADMAP.md](ROADMAP.md), not here.
-
-## Readiness Focus
-
-Until implementation begins, backlog work should stay constrained to doc consistency across the v0 source-of-truth files, implementation-ready task shaping, explicit decision capture in `docs/DECISIONS.md`, and manual conflict checks across README, product, architecture, CLI, schema, and security docs.
-
-## Task Readiness Rule
-
-An item is ready for implementation only when the task statement includes:
-
-- a clear requirement;
-- expected files to change;
-- tests to run;
-- acceptance criteria;
-- a PR summary format.
-
-## Not In Scope Yet
-
-Until the v0 documentation contract is stable, do not add:
-
-- Rust crate setup;
-- CLI implementation;
-- process management code;
-- policy enforcement code;
-- CI or workflow automation beyond documentation checks.
+Those remain outside the completed v0 execution primitive.
