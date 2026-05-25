@@ -10,7 +10,7 @@ It is not evidence that the system is implemented.
 
 The system should be a Rust-based controlled command-line execution tool that sits between an agent or caller and the operating system command line.
 
-The first architectural slice is a single foreground execution path, not a broader terminal platform.
+The first implemented slice is a single foreground execution path. The next slice adds broker-layer admission control without expanding into sessions or adapter sprawl.
 
 ## Core Pattern
 
@@ -67,8 +67,9 @@ The CLI is an adapter, not the execution engine.
 
 ### Policy Layer
 
-- remain a structural placeholder in v0;
-- preserve a clean seam for future allow/deny rules and approval hooks.
+- evaluate valid canonical requests before subprocess spawn;
+- return `allow` or `deny` in version 1;
+- preserve a clean seam for future approval hooks without implementing them yet.
 
 ### Logging Layer
 
@@ -86,11 +87,12 @@ It does not own process spawning, policy decisions, working-directory authorizat
 1. An adapter receives a request.
 2. The adapter validates basic shape.
 3. The adapter generates a request ID for valid requests and normalizes input into canonical request types.
-4. The broker applies working-directory rules and any v0 admission checks.
-5. The execution harness runs or rejects the request.
-6. The logging layer persists one execution evidence record outside the target working directory.
-7. The broker returns canonical result types.
-8. The adapter serializes the result for the caller.
+4. The broker applies policy admission control using canonical request data and the canonicalized startup workspace root.
+5. Denied requests return a canonical `denied` result without subprocess spawn.
+6. Allowed requests continue into the execution harness.
+7. The logging layer persists one machine-readable evidence record for either the denial or the completed execution outside the target working directory.
+8. The broker returns canonical result types.
+9. The adapter serializes the result for the caller.
 
 No downstream component should need raw CLI tokens after canonicalization.
 
@@ -118,7 +120,7 @@ No downstream component should need raw CLI tokens after canonicalization.
 - detailed evidence-retention policy;
 - OS sandboxing internals.
 
-## Version 0 Boundary Notes
+## Version Boundary Notes
 
 Version 0 is intentionally narrow:
 
@@ -127,6 +129,12 @@ Version 0 is intentionally narrow:
 - one canonical command representation: argument vector
 - one result family: structured JSON success, failure, timeout, or execution error
 - one evidence family: machine-readable execution events
+
+Version 1 keeps the same adapter surface and adds:
+
+- one policy checkpoint between validation and execution;
+- one new caller-visible status: `denied`;
+- one denial evidence event family for broker rejections before spawn.
 
 This document defines structure and responsibility boundaries. Exact field names and status values belong in [docs/REQUEST_RESPONSE_SCHEMA.md](REQUEST_RESPONSE_SCHEMA.md).
 

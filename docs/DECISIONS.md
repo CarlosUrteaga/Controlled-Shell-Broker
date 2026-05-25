@@ -168,3 +168,19 @@ Post-v0 policy is a broker-layer admission-control concern that runs after reque
 - policy may inspect canonical request metadata such as command vector, `cwd`, operation, timeout, environment assumptions, and future caller metadata.
 - policy must not execute commands, interpret command output, mutate files, or replace request validation.
 - the model includes `allow`, `deny`, and a future `require_approval` outcome, but approval hooks are designed only and are not part of the next implementation slice.
+
+### D-0024: Use `denied` As The Caller-Visible Policy Rejection Status
+
+- Date: 2026-05-25
+- Status: Accepted
+Version 1 policy rejection is a broker-level result with caller-visible `status: "denied"`.
+- denied responses preserve the standard execution result envelope, use `exit_code: null`, empty `stdout` and `stderr`, `duration_ms: 0`, `timed_out: false`, and include `error.code` plus `error.message`.
+- denied requests do not spawn a subprocess, remain distinct from `invalid_request` and `execution_error`, and use CLI exit code `1`.
+
+### D-0025: Define The First Workspace Root At Broker Startup
+
+- Date: 2026-05-25
+- Status: Accepted
+The first approved workspace root for version 1 policy is the broker startup `cwd`, canonicalized once.
+- workspace authorization is policy, not CLI validation: invalid or unresolvable `--cwd` remains `invalid_request`, while a valid resolved `cwd` outside the startup root is `denied` with reason code `cwd_outside_workspace_root`.
+- denied requests produce machine-readable evidence, and `require_approval` remains documented but unimplemented in version 1.
