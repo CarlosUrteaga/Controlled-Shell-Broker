@@ -59,6 +59,14 @@ pub struct ExecutionEvidence {
     pub timed_out: bool,
     pub timestamp: String,
     pub error_code: Option<String>,
+    pub policy_decision: String,
+    pub policy_reason: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PolicyAudit {
+    pub decision: String,
+    pub reason: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -198,6 +206,10 @@ impl ExecutionEvidence {
             || "\"error_code\":null".to_string(),
             |value| format!("\"error_code\":{}", json_string(value)),
         );
+        let policy_reason = self.policy_reason.as_ref().map_or_else(
+            || "\"policy_reason\":null".to_string(),
+            |value| format!("\"policy_reason\":{}", json_string(value)),
+        );
 
         format!(
             concat!(
@@ -212,6 +224,8 @@ impl ExecutionEvidence {
                 "\"duration_ms\":{},",
                 "\"timed_out\":{},",
                 "\"timestamp\":{},",
+                "{},",
+                "\"policy_decision\":{},",
                 "{}",
                 "}}"
             ),
@@ -225,7 +239,9 @@ impl ExecutionEvidence {
             self.duration_ms,
             self.timed_out,
             json_string(&self.timestamp),
-            error_code
+            error_code,
+            json_string(&self.policy_decision),
+            policy_reason
         )
     }
 }
@@ -246,6 +262,22 @@ pub fn denied_execution(request: &ExecutionRequest, denied: DeniedExecution) -> 
             code: denied.code,
             message: denied.message,
         }),
+    }
+}
+
+impl PolicyAudit {
+    pub fn allow() -> Self {
+        Self {
+            decision: "allow".to_string(),
+            reason: None,
+        }
+    }
+
+    pub fn deny(reason: String) -> Self {
+        Self {
+            decision: "deny".to_string(),
+            reason: Some(reason),
+        }
     }
 }
 
@@ -476,12 +508,42 @@ mod tests {
             timed_out: false,
             timestamp: "1716500000000".to_string(),
             error_code: None,
+            policy_decision: "allow".to_string(),
+            policy_reason: None,
         };
 
         let json = evidence.to_json();
 
         assert!(json.contains("\"event_type\":\"execution.completed\""));
         assert!(json.contains("\"timestamp\":\"1716500000000\""));
+        assert!(json.contains("\"policy_decision\":\"allow\""));
+        assert!(!json.contains("stdout"));
+        assert!(!json.contains("stderr"));
+    }
+
+    #[test]
+    fn denied_evidence_json_includes_policy_reason_without_output() {
+        let evidence = ExecutionEvidence {
+            event_type: "execution.denied".to_string(),
+            request_id: "req-123".to_string(),
+            operation: "run".to_string(),
+            cwd: PathBuf::from("/tmp/work"),
+            command: vec!["rm".to_string()],
+            status: "denied".to_string(),
+            exit_code: None,
+            duration_ms: 0,
+            timed_out: false,
+            timestamp: "1716500000000".to_string(),
+            error_code: Some("denied_executable".to_string()),
+            policy_decision: "deny".to_string(),
+            policy_reason: Some("denied_executable".to_string()),
+        };
+
+        let json = evidence.to_json();
+
+        assert!(json.contains("\"event_type\":\"execution.denied\""));
+        assert!(json.contains("\"policy_decision\":\"deny\""));
+        assert!(json.contains("\"policy_reason\":\"denied_executable\""));
         assert!(!json.contains("stdout"));
         assert!(!json.contains("stderr"));
     }

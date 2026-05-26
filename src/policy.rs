@@ -15,6 +15,15 @@ pub(crate) enum PolicyDecision {
     Deny(DeniedExecution),
 }
 
+impl PolicyDecision {
+    pub(crate) fn audit(&self) -> crate::types::PolicyAudit {
+        match self {
+            Self::Allow => crate::types::PolicyAudit::allow(),
+            Self::Deny(denied) => crate::types::PolicyAudit::deny(denied.code.clone()),
+        }
+    }
+}
+
 pub(crate) fn build_context(startup_cwd: PathBuf) -> io::Result<PolicyContext> {
     Ok(PolicyContext {
         workspace_root: fs::canonicalize(startup_cwd)?,
@@ -172,6 +181,26 @@ mod tests {
                 message: "The request was denied by broker policy.".to_string(),
             })
         );
+    }
+
+    #[test]
+    fn deny_decision_produces_policy_audit_reason() {
+        let audit = PolicyDecision::Deny(DeniedExecution {
+            code: "denied_executable".to_string(),
+            message: "The request was denied by broker policy.".to_string(),
+        })
+        .audit();
+
+        assert_eq!(audit.decision, "deny");
+        assert_eq!(audit.reason.as_deref(), Some("denied_executable"));
+    }
+
+    #[test]
+    fn allow_decision_produces_allow_policy_audit() {
+        let audit = PolicyDecision::Allow.audit();
+
+        assert_eq!(audit.decision, "allow");
+        assert_eq!(audit.reason, None);
     }
 
     #[test]

@@ -148,6 +148,7 @@ Rules:
 - Version 0 requires persistence to a tool-managed location outside the target workspace.
 - Version 0 evidence should prioritize metadata over full stdout and stderr persistence.
 - Version 1 adds `execution.denied` for policy rejections before process spawn.
+- Version 1 adds `policy_decision` and `policy_reason` metadata for policy auditing.
 
 ## `DeniedExecutionEvent`
 
@@ -163,7 +164,9 @@ Rules:
   "duration_ms": 0,
   "timed_out": false,
   "timestamp": "2026-05-25T00:00:00Z",
-  "error_code": "denied_executable"
+  "error_code": "denied_executable",
+  "policy_decision": "deny",
+  "policy_reason": "denied_executable"
 }
 ```
 
@@ -172,6 +175,7 @@ Rules:
 - one denied event is persisted for each request denied by policy
 - denied events are written to the same broker-managed evidence location as execution-completed events
 - denied events record request metadata and denial reason without persisting stdout or stderr
+- allowed execution events persist `policy_decision: "allow"`
 
 ## Required Error Codes
 
