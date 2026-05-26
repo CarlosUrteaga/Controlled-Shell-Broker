@@ -35,11 +35,23 @@ Near-term follow-up:
 - specify working-directory root restrictions beyond simple `cwd` validation;
 - document environment-shaping rules if v1 changes inherited environment behavior.
 
-### Evidence And Retention
+### Phase 3A: Durable Evidence And Retention
 
 - decide whether evidence moves from the temp directory to a durable state directory;
 - define retention and cleanup expectations;
 - document any future output-capture policy beyond metadata-only evidence.
+
+### Phase 3B: Open Inspection Mode
+
+- define a read-oriented inspection profile that preserves broker policy, timeout, and evidence boundaries;
+- identify the initial allowlist or profile for repository inspection commands such as search, listing, and file-reading tools;
+- add inspection-oriented metrics that help compare agent search behavior without redefining the core execution result shape;
+- use observed command usage to decide whether higher-level inspection primitives are justified later.
+
+### Command Semantics Decision
+
+- keep generic process semantics as the default result model;
+- require a concrete documented insufficiency before introducing command-family-specific result interpretation.
 
 ### Process Lifecycle
 
@@ -60,4 +72,4 @@ Do not reopen version 0 scope by adding:
 - MCP, JSON-RPC, or HTTP transport work;
 - diff analysis, editor integration, or code-editing behavior.
 
-Those remain outside the completed v0 execution primitive.
+Those remain outside the completed v0 execution primitive unless a later documented phase expands the product boundary explicitly.
