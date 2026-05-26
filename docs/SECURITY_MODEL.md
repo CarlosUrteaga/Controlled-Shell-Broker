@@ -10,7 +10,7 @@ It is not evidence that the protections described here are implemented.
 
 The tool exists to provide controlled command-line access for coding agents, not unrestricted shell access.
 
-Version 0 improves structure, visibility, and bounded execution. Version 1 adds broker-layer admission control. Neither version should be mistaken for a full sandbox.
+Version 0 improves structure, visibility, and bounded execution. Version 1 adds broker-layer admission control. Phase 3A plans durable evidence retention. None of these phases should be mistaken for a full sandbox.
 
 This file is the source of truth for version 0 safety assumptions and the initial version 1 policy boundary.
 
@@ -94,6 +94,7 @@ This is a known v0 limitation and should be revisited before adding long-lived s
 - Version 0 requires one persisted machine-readable execution record per run.
 - Version 0 evidence must be stored outside the target workspace in a tool-managed location.
 - Version 1 denied requests also persist machine-readable evidence even though no subprocess starts.
+- Phase 3A durable evidence increases persistence risk because metadata survives temporary-directory cleanup and may remain available across reboots, sessions, and later review windows.
 - Future log design should separate operational metadata from high-risk payload content when practical.
 
 ## Evidence Logging Risk
@@ -103,6 +104,8 @@ Version 0 evidence records should avoid persisting full stdout and stderr by def
 The CLI response may return stdout and stderr to the caller, but persisted evidence should prioritize metadata unless a later logging policy explicitly allows output capture.
 
 Version 1 denied evidence should record request metadata and denial reason without persisting stdout or stderr.
+
+Phase 3A keeps that metadata-only boundary while changing the intended default storage target to a durable broker-owned per-user platform state directory.
 
 ## Human Approval Assumptions
 
@@ -134,6 +137,12 @@ Version 1 additionally provides:
 - broker-level denial before process spawn for disallowed requests;
 - workspace-root restriction as policy rather than CLI validation;
 - machine-readable denial evidence.
+
+Phase 3A additionally plans:
+
+- durable broker-owned evidence storage outside the target workspace;
+- bounded retention and cleanup rules in a later Phase 3A implementation slice;
+- no stdout or stderr persistence by default despite the longer-lived storage target.
 
 ## Documentation Obligation
 

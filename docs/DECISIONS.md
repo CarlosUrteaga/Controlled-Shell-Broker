@@ -158,7 +158,7 @@ The first Rust implementation slice stops at adapter parsing and validation. Val
 Version 0 stores execution evidence outside the target working directory under a harness-owned state directory, and the initial implementation uses the operating system temporary directory under `llm-shell/evidence`.
 - this satisfies the v0 boundary requirement that evidence must not be written into the target workspace while deferring durable, user-configurable retention until after v0.
 - v0 evidence is available after execution but may be removed by operating-system temporary-directory cleanup.
-- future versions may move evidence to a platform-specific state directory or support explicit configuration.
+- this storage-location default is superseded for future phases by D-0032, but remains the accepted version 0 historical baseline.
 
 ### D-0023: Introduce Policy As Broker-Layer Admission Control After Version 0
 
@@ -233,3 +233,12 @@ Post-v1 Phase 3 is split into Phase 3A and Phase 3B instead of treating evidence
 - Phase 3A focuses on durable evidence storage, retention, and bounded evidence lifecycle behavior without changing the base execution contract.
 - Phase 3B focuses on a read-oriented, broker-governed open inspection mode that remains policy-bounded, measurable, and layered above the existing execution broker rather than replacing it.
 - higher-level inspection primitives and any command-semantic reinterpretation require separate justification after Phase 3A and Phase 3B produce enough evidence.
+
+### D-0032: Make Durable Broker-Owned Storage The Phase 3A Evidence Direction
+
+- Date: 2026-05-27
+- Status: Accepted
+Phase 3A changes the intended default evidence target from temporary-directory storage to a durable broker-owned per-user platform state directory outside the target workspace.
+- this decision does not change the caller-facing CLI contract, execution-result envelope, status vocabulary, or metadata-only evidence boundary.
+- Phase 3A PR 2 implements the location change, while lifecycle rules are deferred to PR 3.
+- D-0022 remains the accepted version 0 baseline for the initial implementation but is superseded as the default storage direction for future phases.
