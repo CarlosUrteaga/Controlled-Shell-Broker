@@ -66,6 +66,8 @@ cargo run -- run --cwd . --timeout 5 -- echo hello
 cargo run -- run --cwd . --timeout 1 -- sleep 5
 ```
 
+For the implemented version 1 policy phase, use [docs/V1_ACCEPTANCE.md](V1_ACCEPTANCE.md) as the canonical manual smoke checklist covering success, timeout, and denial behavior.
+
 ## Task-Level Validation Contract
 
 Every future task must explicitly list:

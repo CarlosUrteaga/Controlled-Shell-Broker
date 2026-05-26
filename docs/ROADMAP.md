@@ -27,6 +27,7 @@ Use [docs/V0_ACCEPTANCE.md](V0_ACCEPTANCE.md) as the canonical v0 completion che
 ## Next Phase 2: Basic Policy
 
 - use [docs/POLICY_MODEL.md](POLICY_MODEL.md) as the source of truth for broker-layer admission control;
+- use [docs/V1_ACCEPTANCE.md](V1_ACCEPTANCE.md) as the canonical smoke checklist for implemented v1 policy behavior;
 - introduce a policy seam with documented allow and deny behavior;
 - define dangerous-command handling expectations;
 - define path and working-directory restrictions beyond simple existence checks;
