@@ -19,14 +19,22 @@ fn execute_with_policy<F>(
 where
     F: FnOnce(&ExecutionRequest, &PolicyContext) -> PolicyDecision,
 {
-    match evaluate(request, policy_context) {
-        PolicyDecision::Allow => persist_execution(execute_once(request)),
-        PolicyDecision::Deny(denied) => CliOutput::Execution(denied_execution(request, denied)),
+    let decision = evaluate(request, policy_context);
+    let policy_audit = decision.audit();
+
+    match decision {
+        PolicyDecision::Allow => persist_execution(execute_once(request), &policy_audit),
+        PolicyDecision::Deny(denied) => {
+            persist_execution(denied_execution(request, denied), &policy_audit)
+        }
     }
 }
 
-fn persist_execution(response: ExecutionResponse) -> CliOutput {
-    match evidence::persist(&response) {
+fn persist_execution(
+    response: ExecutionResponse,
+    policy_audit: &crate::types::PolicyAudit,
+) -> CliOutput {
+    match evidence::persist(&response, policy_audit) {
         Ok(_) => CliOutput::Execution(response),
         Err(error) => CliOutput::Execution(evidence_write_failed(response, error)),
     }
@@ -456,7 +464,11 @@ mod tests {
             std::env::temp_dir().join(format!("llm-shell-exec-test-{}", request.request_id));
 
         let response = execute_once(&request);
-        let output = match evidence::persist_in_root(&response, &evidence_root) {
+        let output = match evidence::persist_in_root(
+            &response,
+            &crate::types::PolicyAudit::allow(),
+            &evidence_root,
+        ) {
             Ok(_) => CliOutput::Execution(response),
             Err(error) => CliOutput::Execution(evidence_write_failed(response, error)),
         };
@@ -494,7 +506,11 @@ mod tests {
             .expect("test fixture file should be created");
 
         let response = execute_once(&request);
-        let output = match evidence::persist_in_root(&response, &evidence_root) {
+        let output = match evidence::persist_in_root(
+            &response,
+            &crate::types::PolicyAudit::allow(),
+            &evidence_root,
+        ) {
             Ok(_) => CliOutput::Execution(response),
             Err(error) => CliOutput::Execution(evidence_write_failed(response, error)),
         };

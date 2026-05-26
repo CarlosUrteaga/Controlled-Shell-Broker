@@ -216,3 +216,11 @@ PR 4 makes the broker startup workspace root the first active deny rule in polic
 PR 5 adds a minimal dangerous-executable denylist in policy using exact basename matching on `command[0]`.
 - the denylist is exactly: `rm`, `sudo`, `su`, `shutdown`, `reboot`, `mkfs`, `dd`, and basename matching also denies path forms such as `/bin/rm`.
 - matching is exact rather than substring-based, and allowed commands continue through the existing execution path.
+
+### D-0030: Persist Policy Audit Metadata In Evidence
+
+- Date: 2026-05-25
+- Status: Accepted
+PR 6 extends machine-readable evidence with explicit policy audit metadata while keeping storage location and output-persistence behavior unchanged.
+- executed requests persist `policy_decision: "allow"`, while denied requests persist `event_type: "execution.denied"`, `policy_decision: "deny"`, and `policy_reason`.
+- no stdout or stderr persistence is added for either allowed or denied evidence records.
