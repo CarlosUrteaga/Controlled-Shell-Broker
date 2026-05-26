@@ -10,7 +10,7 @@ It is not evidence that the system is implemented.
 
 The system should be a Rust-based controlled command-line execution tool that sits between an agent or caller and the operating system command line.
 
-The first implemented slice is a single foreground execution path. The next slice adds broker-layer admission control without expanding into sessions or adapter sprawl.
+The first implemented slice is a single foreground execution path. The next slice adds broker-layer admission control without expanding into sessions or adapter sprawl. Phase 3A then strengthens the logging boundary with durable evidence and bounded retention planning.
 
 Later phases may add a read-oriented inspection profile above the broker, but the broker remains the execution and evidence boundary.
 
@@ -76,7 +76,8 @@ The CLI is an adapter, not the execution engine.
 ### Logging Layer
 
 - record machine-readable execution events;
-- support traceability and later evidence workflows.
+- support traceability and later evidence workflows;
+- own durable evidence storage and retention behavior as those rules become part of the active broker contract.
 
 ### Optional Inspection Layer
 
@@ -128,7 +129,6 @@ If an inspection layer is added later, it should consume canonical broker operat
 - protocol adapter implementations;
 - session internals;
 - streaming output;
-- detailed evidence-retention policy;
 - OS sandboxing internals.
 
 ## Version Boundary Notes
@@ -146,6 +146,12 @@ Version 1 keeps the same adapter surface and adds:
 - one policy checkpoint between validation and execution;
 - one new caller-visible status: `denied`;
 - one denial evidence event family for broker rejections before spawn.
+
+Phase 3A keeps the same caller-visible execution contract and adds:
+
+- durable broker-owned evidence as the intended default storage direction;
+- bounded retention and cleanup as logging-layer responsibilities;
+- no stdout or stderr persistence despite the longer-lived evidence target.
 
 This document defines structure and responsibility boundaries. Exact field names and status values belong in [docs/REQUEST_RESPONSE_SCHEMA.md](REQUEST_RESPONSE_SCHEMA.md).
 

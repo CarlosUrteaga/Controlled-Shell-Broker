@@ -2,7 +2,7 @@
 
 ## Status
 
-This document defines the caller-facing CLI contract for version 0 and version 1 policy admission control.
+This document defines the caller-facing CLI contract for version 0, version 1 policy admission control, and the unchanged caller boundary through Phase 3A durable evidence planning.
 
 It is not evidence that the CLI is implemented.
 
@@ -246,9 +246,11 @@ Version 0 requires one persisted execution-evidence record per execution attempt
 
 Version 1 extends this requirement to policy denials that reach the broker and are rejected before process spawn.
 
+Phase 3A keeps the same caller-visible execution result contract while changing the intended default evidence location from temporary-directory storage to a durable broker-owned per-user platform state directory.
+
 Evidence records must be written outside the target working directory selected by `--cwd`.
 
-The default evidence location should be a harness-owned state directory.
+The default evidence location should be a durable broker-owned state directory.
 
 Recommended default strategy:
 
@@ -256,9 +258,9 @@ Recommended default strategy:
 <harness-state-dir>/evidence/YYYY-MM-DD/<timestamp>_<request_id>.json
 ```
 
-The exact platform-specific state directory may be defined during implementation, but it must not be inside the target working directory by default.
+The exact platform-specific state-directory mechanism may be defined during implementation, but it must resolve to a per-user broker-owned location and must not be inside the target working directory by default.
 
-Evidence persistence is not configured through the v0 CLI contract.
+Evidence persistence is not configured through the CLI contract in Phase 3A. This phase does not add flags for evidence location, retention, or output persistence.
 
 If the harness cannot write required execution evidence for a request that otherwise reached execution, the result should be reported as `execution_error`.
 
@@ -277,7 +279,7 @@ The v0 evidence record should include:
 - timestamp;
 - error code when applicable.
 
-Full stdout and stderr persistence is not required in v0 or in version 1 denial evidence.
+Full stdout and stderr persistence is not required in v0, in version 1 denial evidence, or in Phase 3A durable evidence.
 
 ## Request And Response Boundary
 
@@ -318,6 +320,8 @@ Version 0 uses only generic process semantics:
 - harness-level process or evidence failure maps to `execution_error`.
 
 Command-specific semantics are deferred until after v0.
+
+The accepted version 1 command examples and status expectations remain valid in Phase 3A; only evidence storage expectations change.
 
 ## Responsibility Boundary
 

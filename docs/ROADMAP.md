@@ -36,7 +36,7 @@ Use [docs/V0_ACCEPTANCE.md](V0_ACCEPTANCE.md) as the canonical v0 completion che
 ## Future Phase 3A: Durable Evidence And Retention
 
 - enrich evidence retention and storage rules;
-- decide whether durable state storage replaces temp-directory evidence;
+- replace the temporary-directory evidence baseline with durable broker-owned state storage;
 - define bounded retention and cleanup expectations for broker-owned evidence;
 - preserve the current caller-facing execution contract while evidence storage evolves.
 

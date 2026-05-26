@@ -68,6 +68,8 @@ cargo run -- run --cwd . --timeout 1 -- sleep 5
 
 For the implemented version 1 policy phase, use [docs/V1_ACCEPTANCE.md](V1_ACCEPTANCE.md) as the canonical manual smoke checklist covering success, timeout, and denial behavior.
 
+For Phase 3A docs-only contract work, use manual cross-doc consistency review as the primary validation mode until [docs/PHASE3_ACCEPTANCE.md](PHASE3_ACCEPTANCE.md) exists.
+
 ## Task-Level Validation Contract
 
 Every future task must explicitly list:
@@ -81,6 +83,8 @@ If a task does not add or update automated tests, it must still provide:
 - the reason no tests exist;
 - the minimum manual validation commands required;
 - the next follow-up task needed to add test coverage.
+
+For docs-only Phase 3A contract tasks, the minimum manual validation is a source-of-truth consistency review across the listed docs, plus confirmation that no caller-visible schema or CLI behavior changed unintentionally.
 
 ## Minimum Validation Expectations
 

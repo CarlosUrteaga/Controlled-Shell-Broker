@@ -10,7 +10,7 @@ It is not evidence that these types are implemented.
 
 This file is the source of truth for request, result, error, event, and status shapes shared across CLI adapters, broker components, and future protocol adapters.
 
-The field names below define the canonical contract through version 1 policy admission control. Product and architecture docs should reference this file instead of duplicating the shapes.
+The field names below define the canonical contract through version 1 policy admission control and Phase 3A durable evidence planning. Product and architecture docs should reference this file instead of duplicating the shapes.
 
 ## `ExecutionRequest`
 
@@ -146,7 +146,8 @@ Rules:
 - One `ExecutionEvent` record is persisted per execution attempt that reaches the broker.
 - The event is machine-readable execution evidence, separate from the caller JSON result.
 - Version 0 requires persistence to a tool-managed location outside the target workspace.
-- Version 0 evidence should prioritize metadata over full stdout and stderr persistence.
+- Phase 3A changes the intended default persistence target from temporary-directory storage to a durable broker-owned per-user platform state directory.
+- Evidence remains metadata-only by default: persisted events do not include stdout or stderr in Phase 3A.
 - Version 1 adds `execution.denied` for policy rejections before process spawn.
 - Version 1 adds `policy_decision` and `policy_reason` metadata for policy auditing.
 
@@ -176,6 +177,7 @@ Rules:
 - denied events are written to the same broker-managed evidence location as execution-completed events
 - denied events record request metadata and denial reason without persisting stdout or stderr
 - allowed execution events persist `policy_decision: "allow"`
+- Phase 3A does not change the caller-visible execution-result envelope for denied or allowed requests
 
 ## Required Error Codes
 
