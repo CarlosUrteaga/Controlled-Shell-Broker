@@ -208,3 +208,11 @@ PR 3 maps broker policy rejection into the standard execution-result envelope wi
 PR 4 makes the broker startup workspace root the first active deny rule in policy.
 - the root path itself and descendant paths are allowed, while valid canonicalized paths outside that root are denied with `cwd_outside_workspace_root`.
 - malformed or unresolvable `--cwd` remains `invalid_request` in CLI validation and is not reclassified as policy denial.
+
+### D-0029: Deny A Minimal Exact-Basename Executable Set
+
+- Date: 2026-05-25
+- Status: Accepted
+PR 5 adds a minimal dangerous-executable denylist in policy using exact basename matching on `command[0]`.
+- the denylist is exactly: `rm`, `sudo`, `su`, `shutdown`, `reboot`, `mkfs`, `dd`, and basename matching also denies path forms such as `/bin/rm`.
+- matching is exact rather than substring-based, and allowed commands continue through the existing execution path.

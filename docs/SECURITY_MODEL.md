@@ -59,6 +59,7 @@ The tool should make command execution actions:
 - CLI validation checks request shape, not command safety.
 - Version 0 allows direct executable invocation only; it does not define shell-string execution.
 - Version 1 adds the first denied-executable policy surface.
+- The initial exact-basename denylist is: `rm`, `sudo`, `su`, `shutdown`, `reboot`, `mkfs`, `dd`.
 - Future policy may add more allowlists, denylists, path restrictions, or approval hooks without changing canonical request shapes.
 
 ## Timeout Assumptions

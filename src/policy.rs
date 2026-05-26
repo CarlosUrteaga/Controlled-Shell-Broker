@@ -1,6 +1,6 @@
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::types::{DeniedExecution, ExecutionRequest};
 
@@ -22,14 +22,33 @@ pub(crate) fn build_context(startup_cwd: PathBuf) -> io::Result<PolicyContext> {
 }
 
 pub(crate) fn evaluate(request: &ExecutionRequest, context: &PolicyContext) -> PolicyDecision {
-    if request.cwd.starts_with(&context.workspace_root) {
-        PolicyDecision::Allow
-    } else {
+    if !request.cwd.starts_with(&context.workspace_root) {
         PolicyDecision::Deny(DeniedExecution {
             code: "cwd_outside_workspace_root".to_string(),
             message: "The request cwd is outside the broker startup workspace root.".to_string(),
         })
+    } else if denied_executable(&request.command[0]) {
+        PolicyDecision::Deny(DeniedExecution {
+            code: "denied_executable".to_string(),
+            message: "The request executable is denied by broker policy.".to_string(),
+        })
+    } else {
+        PolicyDecision::Allow
     }
+}
+
+fn denied_executable(command_0: &str) -> bool {
+    let Some(basename) = Path::new(command_0)
+        .file_name()
+        .and_then(|name| name.to_str())
+    else {
+        return false;
+    };
+
+    matches!(
+        basename,
+        "rm" | "sudo" | "su" | "shutdown" | "reboot" | "mkfs" | "dd"
+    )
 }
 
 #[cfg(test)]
@@ -69,6 +88,12 @@ mod tests {
             mode: "foreground".to_string(),
             output_format: "json".to_string(),
         }
+    }
+
+    fn request_with_command(cwd: PathBuf, command_0: &str) -> ExecutionRequest {
+        let mut request = request(cwd);
+        request.command = vec![command_0.to_string()];
+        request
     }
 
     #[test]
@@ -146,6 +171,65 @@ mod tests {
                 code: "denied_executable".to_string(),
                 message: "The request was denied by broker policy.".to_string(),
             })
+        );
+    }
+
+    #[test]
+    fn evaluate_denies_exact_dangerous_executable_basenames() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
+        let context = PolicyContext {
+            workspace_root: workspace_root.clone(),
+        };
+
+        for command_0 in ["rm", "sudo", "su", "shutdown", "reboot", "mkfs", "dd"] {
+            assert_eq!(
+                evaluate(
+                    &request_with_command(workspace_root.clone(), command_0),
+                    &context
+                ),
+                PolicyDecision::Deny(DeniedExecution {
+                    code: "denied_executable".to_string(),
+                    message: "The request executable is denied by broker policy.".to_string(),
+                })
+            );
+        }
+    }
+
+    #[test]
+    fn evaluate_denies_absolute_path_when_basename_is_dangerous() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
+        let context = PolicyContext {
+            workspace_root: workspace_root.clone(),
+        };
+
+        assert_eq!(
+            evaluate(&request_with_command(workspace_root, "/bin/rm"), &context),
+            PolicyDecision::Deny(DeniedExecution {
+                code: "denied_executable".to_string(),
+                message: "The request executable is denied by broker policy.".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn evaluate_does_not_deny_substring_matches() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
+        let context = PolicyContext {
+            workspace_root: workspace_root.clone(),
+        };
+
+        assert_eq!(
+            evaluate(&request_with_command(workspace_root, "rmdir"), &context),
+            PolicyDecision::Allow
         );
     }
 }

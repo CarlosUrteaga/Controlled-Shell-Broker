@@ -415,6 +415,31 @@ mod tests {
     }
 
     #[test]
+    fn denied_execution_preserves_denied_executable_code() {
+        let request = ExecutionRequest {
+            request_id: "req-123".to_string(),
+            operation: "run".to_string(),
+            cwd: PathBuf::from("/tmp/work"),
+            timeout_seconds: 30,
+            command: vec!["rm".to_string()],
+            mode: "foreground".to_string(),
+            output_format: "json".to_string(),
+        };
+        let response = denied_execution(
+            &request,
+            DeniedExecution {
+                code: "denied_executable".to_string(),
+                message: "The request executable is denied by broker policy.".to_string(),
+            },
+        );
+
+        assert_eq!(
+            response.error.as_ref().map(|error| error.code.as_str()),
+            Some("denied_executable")
+        );
+    }
+
+    #[test]
     fn timed_out_execution_json_uses_null_exit_code_and_true_flag() {
         let response = ExecutionResponse {
             request_id: "req-123".to_string(),
