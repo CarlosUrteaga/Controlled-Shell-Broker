@@ -113,7 +113,11 @@ The root path itself is allowed. Descendant paths are allowed. Requests outside 
 
 This workspace-root restriction is the first implemented deny rule in version 1.
 
-The initial denied-executable rule family uses reason-specific code `denied_executable`. The concrete exact-basename denylist is defined in the implementation slice that adds the rule.
+The initial denied-executable rule family uses reason-specific code `denied_executable`.
+
+The concrete exact-basename denylist is: `rm`, `sudo`, `su`, `shutdown`, `reboot`, `mkfs`, `dd`.
+
+Basename matching is exact and applies to both bare names such as `rm` and path forms such as `/bin/rm`.
 
 These are admission rules, not runtime interpretation rules.
 

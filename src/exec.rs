@@ -430,6 +430,26 @@ mod tests {
     }
 
     #[test]
+    fn denies_dangerous_executable_before_process_spawn() {
+        let request = request(vec!["rm".to_string(), "-rf".to_string(), ".".to_string()]);
+        let output = execute(&request, &policy_context());
+
+        match output {
+            CliOutput::Execution(response) => {
+                assert_eq!(response.status, "denied");
+                assert_eq!(response.exit_code, None);
+                assert!(response.stdout.is_empty());
+                assert!(response.stderr.is_empty());
+                assert_eq!(
+                    response.error.as_ref().map(|error| error.code.as_str()),
+                    Some("denied_executable")
+                );
+            }
+            other => panic!("expected execution output, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn writes_one_evidence_record_for_successful_execution() {
         let request = request(vec!["echo".to_string(), "hello".to_string()]);
         let evidence_root =
