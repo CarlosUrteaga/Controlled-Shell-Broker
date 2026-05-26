@@ -33,11 +33,24 @@ Use [docs/V0_ACCEPTANCE.md](V0_ACCEPTANCE.md) as the canonical v0 completion che
 - define path and working-directory restrictions beyond simple existence checks;
 - keep approval hooks designed but unimplemented until a later phase expands scope explicitly.
 
-## Future Phase 3: Evidence And Command Semantics
+## Future Phase 3A: Durable Evidence And Retention
 
 - enrich evidence retention and storage rules;
 - decide whether durable state storage replaces temp-directory evidence;
-- add command-semantic interpretation only if generic process semantics become insufficient.
+- define bounded retention and cleanup expectations for broker-owned evidence;
+- preserve the current caller-facing execution contract while evidence storage evolves.
+
+## Future Phase 3B: Open Inspection Mode
+
+- add a read-oriented inspection profile on top of the broker execution contract;
+- allow controlled repository exploration with common search and inspection commands;
+- record inspection-oriented evidence and metrics that help compare agent search behavior;
+- use observed command patterns to decide whether higher-level inspection primitives are justified.
+
+## Future Command Semantics Decision
+
+- add command-semantic interpretation only if generic process semantics become insufficient;
+- defer semantic reinterpretation until Phase 3A and Phase 3B produce enough evidence to justify it.
 
 ## Future Phase 4: Sessions And Process Handles
 

@@ -12,6 +12,8 @@ The system should be a Rust-based controlled command-line execution tool that si
 
 The first implemented slice is a single foreground execution path. The next slice adds broker-layer admission control without expanding into sessions or adapter sprawl.
 
+Later phases may add a read-oriented inspection profile above the broker, but the broker remains the execution and evidence boundary.
+
 ## Core Pattern
 
 The intended pattern is:
@@ -76,6 +78,12 @@ The CLI is an adapter, not the execution engine.
 - record machine-readable execution events;
 - support traceability and later evidence workflows.
 
+### Optional Inspection Layer
+
+- may provide higher-level repository inspection workflows on top of the broker;
+- should reuse broker policy, timeout, and evidence behavior rather than bypass them;
+- should stay read-oriented unless a later product change explicitly broadens scope.
+
 ## Interface Boundary
 
 The request interface owns parsing, basic validation, request normalization, request IDs if used, and response serialization.
@@ -96,6 +104,8 @@ It does not own process spawning, policy decisions, working-directory authorizat
 
 No downstream component should need raw CLI tokens after canonicalization.
 
+If an inspection layer is added later, it should consume canonical broker operations and evidence rather than invent a separate execution path.
+
 ## Source Of Truth Boundaries
 
 - Caller-facing CLI details: [docs/CLI_CONTRACT.md](CLI_CONTRACT.md)
@@ -111,6 +121,7 @@ No downstream component should need raw CLI tokens after canonicalization.
 - Prefer typed contracts over ad hoc maps.
 - Keep the architecture reusable across future adapters.
 - Do not require session management, streaming, or shell-string parsing in v0.
+- Keep any later inspection profile layered above the broker instead of coupling it directly to a specific agent runtime.
 
 ## Out Of Scope For This Slice
 

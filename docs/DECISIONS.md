@@ -224,3 +224,12 @@ PR 5 adds a minimal dangerous-executable denylist in policy using exact basename
 PR 6 extends machine-readable evidence with explicit policy audit metadata while keeping storage location and output-persistence behavior unchanged.
 - executed requests persist `policy_decision: "allow"`, while denied requests persist `event_type: "execution.denied"`, `policy_decision: "deny"`, and `policy_reason`.
 - no stdout or stderr persistence is added for either allowed or denied evidence records.
+
+### D-0031: Split Post-v1 Phase 3 Into Durable Evidence And Open Inspection Mode
+
+- Date: 2026-05-26
+- Status: Accepted
+Post-v1 Phase 3 is split into Phase 3A and Phase 3B instead of treating evidence evolution and repository-inspection exploration as one undifferentiated step.
+- Phase 3A focuses on durable evidence storage, retention, and bounded evidence lifecycle behavior without changing the base execution contract.
+- Phase 3B focuses on a read-oriented, broker-governed open inspection mode that remains policy-bounded, measurable, and layered above the existing execution broker rather than replacing it.
+- higher-level inspection primitives and any command-semantic reinterpretation require separate justification after Phase 3A and Phase 3B produce enough evidence.

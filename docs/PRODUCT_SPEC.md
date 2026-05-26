@@ -14,6 +14,8 @@ The tool gives an LLM-driven coding agent, script, or human caller controlled ac
 
 The tool is not the agent itself. It is the controlled execution layer through which an agent interacts with the command line.
 
+In later phases, the same broker may also support a model-agnostic repository-inspection layer built on top of the controlled execution contract rather than replacing it.
+
 ## Core Product Concept
 
 The long-term tool should support an agent development loop:
@@ -32,11 +34,13 @@ The agent owns planning, code generation, and next-step decisions.
 
 The Rust tool owns controlled command execution, process control, structured observations, evidence capture, and safety boundaries.
 
+If repository-inspection workflows are added later, they remain broker-governed capabilities rather than autonomous agent logic.
+
 ## Problem Statement
 
 Coding agents need controlled terminal capabilities such as command execution, validation runs, process handling, and structured evidence. Unrestricted shell access is too risky and too hard to review.
 
-The product should provide a constrained command-line tool that makes these actions explicit, bounded, machine-readable, and extensible toward policy and sessions.
+The product should provide a constrained command-line tool that makes these actions explicit, bounded, machine-readable, and extensible toward policy, durable evidence, and later inspection workflows.
 
 ## Primary User
 
@@ -100,6 +104,8 @@ Secondary users include human developers, reviewers, operators, and automation t
 - session management;
 - policy and approval hooks;
 - richer structured logs and evidence;
+- read-oriented repository inspection profiles and metrics;
+- higher-level inspection primitives only if observed usage justifies them;
 - alternate adapters such as JSON, MCP, RPC, or HTTP.
 
 ## Version 0 Contract Summary
