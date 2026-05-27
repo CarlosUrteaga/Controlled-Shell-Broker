@@ -8,7 +8,7 @@ fn main() {
     let output = match cli::parse_env() {
         types::CliOutput::Request(request) => match build_policy_context(&request) {
             Ok(context) => exec::execute(&request, &context),
-            Err(response) => types::CliOutput::Execution(response),
+            Err(response) => types::CliOutput::Execution(*response),
         },
         other => other,
     };
@@ -18,7 +18,7 @@ fn main() {
 
 fn build_policy_context(
     request: &types::ExecutionRequest,
-) -> Result<policy::PolicyContext, types::ExecutionResponse> {
+) -> Result<policy::PolicyContext, Box<types::ExecutionResponse>> {
     let startup_cwd =
         std::env::current_dir().map_err(|error| startup_context_error(request, error))?;
     policy::build_context(startup_cwd).map_err(|error| startup_context_error(request, error))
@@ -27,8 +27,8 @@ fn build_policy_context(
 fn startup_context_error(
     request: &types::ExecutionRequest,
     error: std::io::Error,
-) -> types::ExecutionResponse {
-    types::ExecutionResponse {
+) -> Box<types::ExecutionResponse> {
+    Box::new(types::ExecutionResponse {
         request_id: request.request_id.clone(),
         operation: request.operation.clone(),
         status: "execution_error".to_string(),
@@ -43,5 +43,5 @@ fn startup_context_error(
             code: "process_start_failed".to_string(),
             message: format!("The broker startup working directory could not be resolved: {error}"),
         }),
-    }
+    })
 }
