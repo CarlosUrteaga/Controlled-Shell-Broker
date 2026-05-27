@@ -5,12 +5,17 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::types::{ExecutionEvidence, ExecutionResponse, PolicyAudit};
 
+const APP_DIR_NAME: &str = "llm-shell";
+
 pub fn persist(response: &ExecutionResponse, policy_audit: &PolicyAudit) -> io::Result<PathBuf> {
-    persist_in_root(response, policy_audit, &default_state_dir())
+    let state_dir = default_state_dir()?;
+    persist_in_root(response, policy_audit, &state_dir)
 }
 
-pub fn default_state_dir() -> PathBuf {
-    std::env::temp_dir().join("llm-shell")
+pub fn default_state_dir() -> io::Result<PathBuf> {
+    resolve_state_dir_for(std::env::consts::OS, |key| {
+        std::env::var_os(key).map(PathBuf::from)
+    })
 }
 
 pub fn persist_in_root(
@@ -29,6 +34,44 @@ pub fn persist_in_root(
     fs::write(&path, evidence.to_json())?;
 
     Ok(path)
+}
+
+fn resolve_state_dir_for<F>(os: &str, mut env: F) -> io::Result<PathBuf>
+where
+    F: FnMut(&str) -> Option<PathBuf>,
+{
+    match os {
+        "macos" => require_env_path(&mut env, "HOME").map(|home| {
+            home.join("Library")
+                .join("Application Support")
+                .join(APP_DIR_NAME)
+        }),
+        "windows" => env("LOCALAPPDATA")
+            .filter(|path| !path.as_os_str().is_empty())
+            .or_else(|| env("APPDATA").filter(|path| !path.as_os_str().is_empty()))
+            .map(|root| root.join(APP_DIR_NAME))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "missing LOCALAPPDATA/APPDATA")),
+        _ => {
+            if let Some(xdg_state_home) = env("XDG_STATE_HOME")
+                .filter(|path| !path.as_os_str().is_empty())
+                .filter(|path| path.is_absolute())
+            {
+                return Ok(xdg_state_home.join(APP_DIR_NAME));
+            }
+
+            require_env_path(&mut env, "HOME")
+                .map(|home| home.join(".local").join("state").join(APP_DIR_NAME))
+        }
+    }
+}
+
+fn require_env_path<F>(env: &mut F, key: &str) -> io::Result<PathBuf>
+where
+    F: FnMut(&str) -> Option<PathBuf>,
+{
+    env(key)
+        .filter(|path| !path.as_os_str().is_empty())
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("missing {key}")))
 }
 
 fn build_evidence(
@@ -158,5 +201,140 @@ mod tests {
 
         fs::remove_file(&path).expect("evidence file cleanup should succeed");
         fs::remove_dir_all(&temp_root).expect("evidence directory cleanup should succeed");
+    }
+
+    #[test]
+    fn resolve_state_dir_uses_absolute_xdg_state_home_on_unix() {
+        let resolved = resolve_state_dir_for("linux", |key| match key {
+            "XDG_STATE_HOME" => Some(PathBuf::from("/xdg-state")),
+            "HOME" => Some(PathBuf::from("/home/tester")),
+            _ => None,
+        })
+        .expect("state dir should resolve");
+
+        assert_eq!(resolved, PathBuf::from("/xdg-state").join(APP_DIR_NAME));
+    }
+
+    #[test]
+    fn resolve_state_dir_falls_back_to_home_on_unix_when_xdg_missing() {
+        let resolved = resolve_state_dir_for("linux", |key| match key {
+            "HOME" => Some(PathBuf::from("/home/tester")),
+            _ => None,
+        })
+        .expect("state dir should resolve");
+
+        assert_eq!(
+            resolved,
+            PathBuf::from("/home/tester")
+                .join(".local")
+                .join("state")
+                .join(APP_DIR_NAME)
+        );
+    }
+
+    #[test]
+    fn resolve_state_dir_ignores_relative_xdg_state_home() {
+        let resolved = resolve_state_dir_for("linux", |key| match key {
+            "XDG_STATE_HOME" => Some(PathBuf::from("relative/state")),
+            "HOME" => Some(PathBuf::from("/home/tester")),
+            _ => None,
+        })
+        .expect("state dir should resolve");
+
+        assert_eq!(
+            resolved,
+            PathBuf::from("/home/tester")
+                .join(".local")
+                .join("state")
+                .join(APP_DIR_NAME)
+        );
+    }
+
+    #[test]
+    fn resolve_state_dir_ignores_empty_xdg_state_home() {
+        let resolved = resolve_state_dir_for("linux", |key| match key {
+            "XDG_STATE_HOME" => Some(PathBuf::new()),
+            "HOME" => Some(PathBuf::from("/home/tester")),
+            _ => None,
+        })
+        .expect("state dir should resolve");
+
+        assert_eq!(
+            resolved,
+            PathBuf::from("/home/tester")
+                .join(".local")
+                .join("state")
+                .join(APP_DIR_NAME)
+        );
+    }
+
+    #[test]
+    fn resolve_state_dir_uses_application_support_on_macos() {
+        let resolved = resolve_state_dir_for("macos", |key| match key {
+            "HOME" => Some(PathBuf::from("/Users/tester")),
+            _ => None,
+        })
+        .expect("state dir should resolve");
+
+        assert_eq!(
+            resolved,
+            PathBuf::from("/Users/tester")
+                .join("Library")
+                .join("Application Support")
+                .join(APP_DIR_NAME)
+        );
+    }
+
+    #[test]
+    fn resolve_state_dir_errors_when_home_missing_on_macos() {
+        let error =
+            resolve_state_dir_for("macos", |_key| None).expect_err("missing HOME should error");
+
+        assert_eq!(error.kind(), io::ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn resolve_state_dir_prefers_localappdata_on_windows() {
+        let resolved = resolve_state_dir_for("windows", |key| match key {
+            "LOCALAPPDATA" => Some(PathBuf::from(r"C:\Users\tester\AppData\Local")),
+            "APPDATA" => Some(PathBuf::from(r"C:\Users\tester\AppData\Roaming")),
+            _ => None,
+        })
+        .expect("state dir should resolve");
+
+        assert_eq!(
+            resolved,
+            PathBuf::from(r"C:\Users\tester\AppData\Local").join(APP_DIR_NAME)
+        );
+    }
+
+    #[test]
+    fn resolve_state_dir_falls_back_to_appdata_on_windows() {
+        let resolved = resolve_state_dir_for("windows", |key| match key {
+            "APPDATA" => Some(PathBuf::from(r"C:\Users\tester\AppData\Roaming")),
+            _ => None,
+        })
+        .expect("state dir should resolve");
+
+        assert_eq!(
+            resolved,
+            PathBuf::from(r"C:\Users\tester\AppData\Roaming").join(APP_DIR_NAME)
+        );
+    }
+
+    #[test]
+    fn resolve_state_dir_errors_when_windows_env_missing() {
+        let error = resolve_state_dir_for("windows", |_key| None)
+            .expect_err("missing windows env should error");
+
+        assert_eq!(error.kind(), io::ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn default_state_dir_is_not_the_v0_temp_directory_baseline() {
+        let resolved = default_state_dir().expect("default state dir should resolve");
+
+        assert_ne!(resolved, std::env::temp_dir().join(APP_DIR_NAME));
+        assert!(resolved.ends_with(APP_DIR_NAME));
     }
 }

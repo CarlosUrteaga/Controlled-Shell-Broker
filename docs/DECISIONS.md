@@ -242,3 +242,12 @@ Phase 3A changes the intended default evidence target from temporary-directory s
 - this decision does not change the caller-facing CLI contract, execution-result envelope, status vocabulary, or metadata-only evidence boundary.
 - Phase 3A PR 2 implements the location change, while lifecycle rules are deferred to PR 3.
 - D-0022 remains the accepted version 0 baseline for the initial implementation but is superseded as the default storage direction for future phases.
+
+### D-0033: Resolve The Phase 3A Default Evidence Root From Standard Platform Environment Rules
+
+- Date: 2026-05-27
+- Status: Accepted
+Phase 3A PR 2 resolves the durable broker-owned default evidence root from standard platform environment rules rather than adding a dependency for directory discovery.
+- macOS uses `$HOME/Library/Application Support/llm-shell`, Windows prefers `%LOCALAPPDATA%/llm-shell` and falls back to `%APPDATA%/llm-shell`, and other Unix platforms use absolute `$XDG_STATE_HOME/llm-shell` or `$HOME/.local/state/llm-shell`.
+- empty or invalid environment values do not trigger a fallback to temporary-directory storage; evidence resolution failure continues through the existing `evidence_write_failed` execution path.
+- PR 2 changes only the default root location, while retention, cleanup, and stronger layout guarantees remain deferred to Phase 3A PR 3.
