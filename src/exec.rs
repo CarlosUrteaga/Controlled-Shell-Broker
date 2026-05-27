@@ -8,33 +8,39 @@ use crate::policy::{self, PolicyContext, PolicyDecision};
 use crate::types::{denied_execution, CliOutput, ErrorDetail, ExecutionRequest, ExecutionResponse};
 
 pub fn execute(request: &ExecutionRequest, policy_context: &PolicyContext) -> CliOutput {
-    execute_with_policy(request, policy_context, policy::evaluate)
+    execute_with_policy_and_persist(request, policy_context, policy::evaluate, evidence::persist)
 }
 
-fn execute_with_policy<F>(
+fn execute_with_policy_and_persist<F, P>(
     request: &ExecutionRequest,
     policy_context: &PolicyContext,
     evaluate: F,
+    persist: P,
 ) -> CliOutput
 where
     F: FnOnce(&ExecutionRequest, &PolicyContext) -> PolicyDecision,
+    P: Fn(&ExecutionResponse, &crate::types::PolicyAudit) -> std::io::Result<std::path::PathBuf>,
 {
     let decision = evaluate(request, policy_context);
     let policy_audit = decision.audit();
 
     match decision {
-        PolicyDecision::Allow => persist_execution(execute_once(request), &policy_audit),
+        PolicyDecision::Allow => persist_execution(execute_once(request), &policy_audit, persist),
         PolicyDecision::Deny(denied) => {
-            persist_execution(denied_execution(request, denied), &policy_audit)
+            persist_execution(denied_execution(request, denied), &policy_audit, persist)
         }
     }
 }
 
-fn persist_execution(
+fn persist_execution<P>(
     response: ExecutionResponse,
     policy_audit: &crate::types::PolicyAudit,
-) -> CliOutput {
-    match evidence::persist(&response, policy_audit) {
+    persist: P,
+) -> CliOutput
+where
+    P: Fn(&ExecutionResponse, &crate::types::PolicyAudit) -> std::io::Result<std::path::PathBuf>,
+{
+    match persist(&response, policy_audit) {
         Ok(_) => CliOutput::Execution(response),
         Err(error) => CliOutput::Execution(evidence_write_failed(response, error)),
     }
@@ -197,10 +203,14 @@ fn duration_ms(started_at: Instant) -> u64 {
 #[cfg(test)]
 mod tests {
     use std::cell::RefCell;
+    use std::io;
     use std::path::PathBuf;
     use std::rc::Rc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     use super::*;
+
+    static TEST_EVIDENCE_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     fn request(command: Vec<String>) -> ExecutionRequest {
         ExecutionRequest {
@@ -225,9 +235,45 @@ mod tests {
         }
     }
 
+    fn temp_evidence_root(name: &str) -> PathBuf {
+        let suffix = TEST_EVIDENCE_COUNTER.fetch_add(1, Ordering::Relaxed);
+        std::env::temp_dir().join(format!(
+            "llm-shell-exec-test-{name}-{}-{suffix}",
+            std::process::id()
+        ))
+    }
+
+    fn execute_for_test(request: &ExecutionRequest, policy_context: &PolicyContext) -> CliOutput {
+        execute_with_temp_evidence(request, policy_context, policy::evaluate)
+    }
+
+    fn execute_with_temp_evidence<F>(
+        request: &ExecutionRequest,
+        policy_context: &PolicyContext,
+        evaluate: F,
+    ) -> CliOutput
+    where
+        F: FnOnce(&ExecutionRequest, &PolicyContext) -> PolicyDecision,
+    {
+        let evidence_root = temp_evidence_root(&request.request_id);
+        let output = execute_with_policy_and_persist(
+            request,
+            policy_context,
+            evaluate,
+            |response, audit| evidence::persist_in_root(response, audit, &evidence_root),
+        );
+
+        if evidence_root.exists() {
+            std::fs::remove_dir_all(&evidence_root)
+                .expect("temp evidence directory cleanup should succeed");
+        }
+
+        output
+    }
+
     #[test]
     fn executes_direct_command_and_captures_stdout() {
-        let output = execute(
+        let output = execute_for_test(
             &request(vec!["echo".to_string(), "hello".to_string()]),
             &policy_context(),
         );
@@ -246,7 +292,7 @@ mod tests {
 
     #[test]
     fn maps_non_zero_exit_to_failed() {
-        let output = execute(&request(vec!["false".to_string()]), &policy_context());
+        let output = execute_for_test(&request(vec!["false".to_string()]), &policy_context());
 
         match output {
             CliOutput::Execution(response) => {
@@ -263,7 +309,7 @@ mod tests {
         let mut request = request(vec!["sleep".to_string(), "2".to_string()]);
         request.timeout_seconds = 1;
 
-        let output = execute(&request, &policy_context());
+        let output = execute_for_test(&request, &policy_context());
 
         match output {
             CliOutput::Execution(response) => {
@@ -284,7 +330,7 @@ mod tests {
         ]);
         request.timeout_seconds = 1;
 
-        let output = execute(&request, &policy_context());
+        let output = execute_for_test(&request, &policy_context());
 
         match output {
             CliOutput::Execution(response) => {
@@ -312,7 +358,7 @@ mod tests {
         let called_ref = Rc::clone(&was_called);
         let captured_ref = Rc::clone(&captured_root);
 
-        let output = execute_with_policy(
+        let output = execute_with_temp_evidence(
             &request(vec!["echo".to_string(), "hello".to_string()]),
             &context,
             move |_request, context| {
@@ -339,7 +385,7 @@ mod tests {
 
     #[test]
     fn maps_start_failures_to_execution_error() {
-        let output = execute(
+        let output = execute_for_test(
             &request(vec!["definitely-not-a-real-command".to_string()]),
             &policy_context(),
         );
@@ -361,7 +407,7 @@ mod tests {
 
     #[test]
     fn returns_structured_denied_response_without_spawning() {
-        let output = execute_with_policy(
+        let output = execute_with_temp_evidence(
             &request(vec!["definitely-not-a-real-command".to_string()]),
             &policy_context(),
             |_request, _context| {
@@ -419,7 +465,7 @@ mod tests {
                 .expect("workspace root should canonicalize"),
         };
 
-        let output = execute(&request, &policy_context);
+        let output = execute_for_test(&request, &policy_context);
 
         match output {
             CliOutput::Execution(response) => {
@@ -440,7 +486,7 @@ mod tests {
     #[test]
     fn denies_dangerous_executable_before_process_spawn() {
         let request = request(vec!["rm".to_string(), "-rf".to_string(), ".".to_string()]);
-        let output = execute(&request, &policy_context());
+        let output = execute_for_test(&request, &policy_context());
 
         match output {
             CliOutput::Execution(response) => {
@@ -528,5 +574,32 @@ mod tests {
         }
 
         std::fs::remove_file(&evidence_root).expect("fixture cleanup should succeed");
+    }
+
+    #[test]
+    fn maps_default_state_dir_resolution_failures_to_execution_error() {
+        let request = request(vec!["echo".to_string(), "hello".to_string()]);
+        let output = execute_with_policy_and_persist(
+            &request,
+            &policy_context(),
+            policy::evaluate,
+            |_response, _audit| {
+                Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "missing durable state directory",
+                ))
+            },
+        );
+
+        match output {
+            CliOutput::Execution(response) => {
+                assert_eq!(response.status, "execution_error");
+                assert_eq!(
+                    response.error.as_ref().map(|error| error.code.as_str()),
+                    Some("evidence_write_failed")
+                );
+            }
+            other => panic!("expected execution output, got {other:?}"),
+        }
     }
 }
