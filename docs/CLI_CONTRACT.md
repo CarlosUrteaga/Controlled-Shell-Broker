@@ -262,6 +262,12 @@ The exact platform-specific state-directory mechanism may be defined during impl
 
 Evidence persistence is not configured through the CLI contract in Phase 3A. This phase does not add flags for evidence location, retention, or output persistence.
 
+Phase 3A retention is configured only through the process environment variable `LLM_SHELL_EVIDENCE_RETENTION_DAYS`.
+
+If unset, the default retention window is 30 UTC date buckets. If set, the value must be a positive integer number of days. Empty, zero, negative, non-integer, or otherwise invalid values are harness-owned evidence lifecycle failures and should surface as `execution_error` with error code `evidence_write_failed`.
+
+Retention cleanup applies only to date-named directories under the broker-owned `evidence/` root. Non-date entries are ignored, and target-workspace files must not be mutated by evidence cleanup.
+
 If the harness cannot write required execution evidence for a request that otherwise reached execution, the result should be reported as `execution_error`.
 
 The evidence record should prioritize metadata over full output persistence to reduce accidental secret exposure.

@@ -107,6 +107,8 @@ Version 1 denied evidence should record request metadata and denial reason witho
 
 Phase 3A keeps that metadata-only boundary while changing the intended default storage target to a durable broker-owned per-user platform state directory.
 
+Phase 3A also bounds evidence lifecycle with a default 30-day UTC date-bucket retention window. The retention window may be configured through `LLM_SHELL_EVIDENCE_RETENTION_DAYS`, and cleanup must stay scoped to date-named directories under the broker-owned evidence root.
+
 ## Human Approval Assumptions
 
 - Version 0 does not define a full human approval workflow.
@@ -141,7 +143,7 @@ Version 1 additionally provides:
 Phase 3A additionally plans:
 
 - durable broker-owned evidence storage outside the target workspace;
-- bounded retention and cleanup rules in a later Phase 3A implementation slice;
+- bounded retention and cleanup for date-bucketed broker-owned evidence;
 - no stdout or stderr persistence by default despite the longer-lived storage target.
 
 ## Documentation Obligation

@@ -251,3 +251,14 @@ Phase 3A PR 2 resolves the durable broker-owned default evidence root from stand
 - macOS uses `$HOME/Library/Application Support/llm-shell`, Windows prefers `%LOCALAPPDATA%/llm-shell` and falls back to `%APPDATA%/llm-shell`, and other Unix platforms use absolute `$XDG_STATE_HOME/llm-shell` or `$HOME/.local/state/llm-shell`.
 - empty or invalid environment values do not trigger a fallback to temporary-directory storage; evidence resolution failure continues through the existing `evidence_write_failed` execution path.
 - PR 2 changes only the default root location, while retention, cleanup, and stronger layout guarantees remain deferred to Phase 3A PR 3.
+
+### D-0034: Use Date-Bucketed Evidence With Required Retention Cleanup
+
+- Date: 2026-05-27
+- Status: Accepted
+Phase 3A PR 3 stores evidence under UTC date buckets and applies required cleanup to expired broker-owned evidence buckets.
+- evidence paths use `<state-dir>/evidence/YYYY-MM-DD/<timestamp>_<request_id>.json`.
+- the default retention window is 30 days and may be overridden with `LLM_SHELL_EVIDENCE_RETENTION_DAYS`.
+- invalid retention configuration maps through the existing `evidence_write_failed` execution-error path instead of silently falling back.
+- cleanup deletes only valid expired date directories under the broker-owned evidence root, ignores non-date entries, and does not mutate target-workspace files.
+- no stdout or stderr persistence, CLI flags, result-schema changes, or new dependencies are added.

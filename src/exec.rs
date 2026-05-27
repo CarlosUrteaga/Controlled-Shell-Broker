@@ -506,8 +506,7 @@ mod tests {
     #[test]
     fn writes_one_evidence_record_for_successful_execution() {
         let request = request(vec!["echo".to_string(), "hello".to_string()]);
-        let evidence_root =
-            std::env::temp_dir().join(format!("llm-shell-exec-test-{}", request.request_id));
+        let evidence_root = temp_evidence_root(&request.request_id);
 
         let response = execute_once(&request);
         let output = match evidence::persist_in_root(
@@ -523,10 +522,20 @@ mod tests {
             CliOutput::Execution(response) => {
                 assert_eq!(response.status, "success");
                 let evidence_dir = evidence_root.join("evidence");
-                let entries = std::fs::read_dir(&evidence_dir)
+                let date_dirs = std::fs::read_dir(&evidence_dir)
                     .expect("evidence directory should exist")
                     .collect::<Result<Vec<_>, _>>()
                     .expect("evidence directory should be readable");
+                assert_eq!(date_dirs.len(), 1);
+                assert!(date_dirs[0]
+                    .file_type()
+                    .expect("date bucket should be inspectable")
+                    .is_dir());
+
+                let entries = std::fs::read_dir(date_dirs[0].path())
+                    .expect("date bucket should be readable")
+                    .collect::<Result<Vec<_>, _>>()
+                    .expect("date bucket entries should be readable");
                 assert_eq!(entries.len(), 1);
 
                 let file_name = entries[0]
