@@ -39,6 +39,7 @@ Use [docs/V0_ACCEPTANCE.md](V0_ACCEPTANCE.md) as the canonical v0 completion che
 - replace the temporary-directory evidence baseline with durable broker-owned state storage;
 - define bounded retention and cleanup expectations for broker-owned evidence;
 - preserve the current caller-facing execution contract while evidence storage evolves.
+- use [docs/PHASE3_ACCEPTANCE.md](PHASE3_ACCEPTANCE.md) as the canonical smoke checklist for implemented Phase 3A evidence behavior.
 
 ## Future Phase 3B: Open Inspection Mode
 
