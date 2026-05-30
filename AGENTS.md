@@ -105,6 +105,8 @@ If any item is missing, the agent should propose a concrete version before codin
 - Keep changes scoped to the stated requirement.
 - Avoid touching unrelated files.
 - Update docs when behavior, interfaces, workflow, or architecture changes.
+- Create feature work on a branch named `feature/phase-#`, where `#` matches the relevant documented phase or step.
+- Merge feature branches with squash merge after finishing the phase.
 - Prefer small, reviewable diffs.
 - Add tests with implementation work whenever practical.
 - Update `docs/DECISIONS.md` when a design choice is added or reversed.
@@ -112,6 +114,40 @@ If any item is missing, the agent should propose a concrete version before codin
 - Treat `docs/REQUEST_RESPONSE_SCHEMA.md` as the schema source of truth.
 - Treat `docs/SECURITY_MODEL.md` as the v0 safety source of truth.
 - Treat `docs/POLICY_MODEL.md` as the source of truth for the next post-v0 policy phase.
+
+## Agent Working Guidelines
+
+Bias toward caution over speed. For trivial tasks, use judgment and keep the process lightweight.
+
+Before coding:
+
+- state assumptions explicitly when they matter;
+- ask if the requirement is unclear or has multiple plausible meanings;
+- surface tradeoffs instead of silently choosing;
+- prefer the simpler approach and push back on unnecessary scope.
+
+Keep solutions simple:
+
+- implement only what was asked;
+- avoid single-use abstractions and speculative configurability;
+- do not add error handling for impossible scenarios;
+- simplify when the solution is larger than the problem requires.
+
+Make surgical changes:
+
+- touch only files required by the task;
+- do not refactor adjacent code unless requested;
+- match existing style even when another style is preferred;
+- mention unrelated dead code or issues instead of changing them;
+- remove only imports, variables, or helpers made unused by the current change.
+
+Work from verifiable goals:
+
+- translate requests into success criteria before implementation;
+- for bug fixes, reproduce the bug before fixing when practical;
+- for validation changes, add or identify invalid-input tests first;
+- for refactors, verify behavior before and after;
+- for multi-step work, state each step and its verification check.
 
 ## Definition Of Done
 
