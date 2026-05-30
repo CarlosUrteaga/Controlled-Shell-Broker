@@ -202,6 +202,8 @@ process_start_failed
 evidence_write_failed
 cwd_outside_workspace_root
 denied_executable
+inspection_command_not_allowed
+inspection_path_outside_workspace
 ```
 
 ## Status Vocabulary

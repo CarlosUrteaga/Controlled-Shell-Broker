@@ -45,7 +45,7 @@ Near-term follow-up:
 
 - define a read-oriented inspection profile that preserves broker policy, timeout, workspace-root, and evidence boundaries;
 - start with repository discovery commands such as listing paths, finding files, searching text, and bounded file reading;
-- deny mutation, privilege escalation, network-oriented commands, shell escape hatches, and out-of-workspace access in the inspection profile;
+- enforce denial of mutation, privilege escalation, network-oriented commands, shell escape hatches, and obvious out-of-workspace path arguments in the inspection profile;
 - use inspection-oriented evidence metrics without redefining the core execution result shape;
 - use observed command usage to decide whether higher-level inspection primitives are justified later.
 

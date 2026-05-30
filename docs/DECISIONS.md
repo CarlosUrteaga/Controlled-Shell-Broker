@@ -283,3 +283,14 @@ Phase 3B PR 6 adds evidence-only inspection metrics without changing the caller-
 - initial categories are limited to `list_paths`, `find_files`, `search_text`, and `read_file`.
 - non-inspection, denied, failed, timed-out, and execution-error events remain valid evidence records.
 - no stdout or stderr persistence, CLI flag, status vocabulary, or policy enforcement change is added in PR 6.
+
+### D-0037: Enforce Open Inspection As An Internal Policy Profile
+
+- Date: 2026-05-30
+- Status: Accepted
+Phase 3B PR 7 adds an internal `OpenInspection` policy profile while keeping ordinary `run` requests on the default policy profile.
+- the profile allows only the documented repository discovery executables: `ls`, `find`, `fd`, `rg`, `grep`, `cat`, `head`, `tail`, and `sed`.
+- out-of-profile executables are denied with `inspection_command_not_allowed`.
+- obvious out-of-workspace path arguments, including parent-directory components and absolute paths outside the workspace root, are denied with `inspection_path_outside_workspace`.
+- existing workspace-root and dangerous-executable denials still run before the inspection profile.
+- no new CLI flag, result envelope, status value, or stdout/stderr persistence change is added in PR 7.

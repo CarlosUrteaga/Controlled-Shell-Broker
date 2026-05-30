@@ -1,12 +1,19 @@
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use crate::types::{DeniedExecution, ExecutionRequest};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PolicyContext {
     pub(crate) workspace_root: PathBuf,
+    pub(crate) profile: PolicyProfile,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum PolicyProfile {
+    DefaultRun,
+    OpenInspection,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,6 +34,7 @@ impl PolicyDecision {
 pub(crate) fn build_context(startup_cwd: PathBuf) -> io::Result<PolicyContext> {
     Ok(PolicyContext {
         workspace_root: fs::canonicalize(startup_cwd)?,
+        profile: PolicyProfile::DefaultRun,
     })
 }
 
@@ -41,16 +49,34 @@ pub(crate) fn evaluate(request: &ExecutionRequest, context: &PolicyContext) -> P
             code: "denied_executable".to_string(),
             message: "The request executable is denied by broker policy.".to_string(),
         })
+    } else if context.profile == PolicyProfile::OpenInspection {
+        evaluate_open_inspection(request, context)
     } else {
         PolicyDecision::Allow
     }
 }
 
+fn evaluate_open_inspection(request: &ExecutionRequest, context: &PolicyContext) -> PolicyDecision {
+    if !inspection_executable(&request.command[0]) {
+        return PolicyDecision::Deny(DeniedExecution {
+            code: "inspection_command_not_allowed".to_string(),
+            message: "The request executable is outside the open inspection profile.".to_string(),
+        });
+    }
+
+    if inspection_path_outside_workspace(request, context) {
+        return PolicyDecision::Deny(DeniedExecution {
+            code: "inspection_path_outside_workspace".to_string(),
+            message: "The inspection request references a path outside the workspace root."
+                .to_string(),
+        });
+    }
+
+    PolicyDecision::Allow
+}
+
 fn denied_executable(command_0: &str) -> bool {
-    let Some(basename) = Path::new(command_0)
-        .file_name()
-        .and_then(|name| name.to_str())
-    else {
+    let Some(basename) = executable_basename(command_0) else {
         return false;
     };
 
@@ -58,6 +84,42 @@ fn denied_executable(command_0: &str) -> bool {
         basename,
         "rm" | "sudo" | "su" | "shutdown" | "reboot" | "mkfs" | "dd"
     )
+}
+
+fn inspection_executable(command_0: &str) -> bool {
+    let Some(basename) = executable_basename(command_0) else {
+        return false;
+    };
+
+    matches!(
+        basename,
+        "ls" | "find" | "fd" | "rg" | "grep" | "cat" | "head" | "tail" | "sed"
+    )
+}
+
+fn executable_basename(command_0: &str) -> Option<&str> {
+    Path::new(command_0)
+        .file_name()
+        .and_then(|name| name.to_str())
+}
+
+fn inspection_path_outside_workspace(request: &ExecutionRequest, context: &PolicyContext) -> bool {
+    request.command.iter().skip(1).any(|arg| {
+        if arg == "--" || arg.starts_with('-') {
+            return false;
+        }
+
+        let path = Path::new(arg);
+
+        if path
+            .components()
+            .any(|component| component == Component::ParentDir)
+        {
+            return true;
+        }
+
+        path.is_absolute() && !path.starts_with(&context.workspace_root)
+    })
 }
 
 #[cfg(test)]
@@ -70,21 +132,18 @@ mod tests {
         std::env::temp_dir().join(format!("llm-shell-policy-{name}-{}", std::process::id()))
     }
 
-    #[test]
-    fn build_context_canonicalizes_startup_cwd_once() {
-        let root = temp_dir("canonicalize");
-        let nested = root.join("subdir");
-        fs::create_dir_all(&nested).expect("temp test directory should be created");
+    fn context(workspace_root: PathBuf) -> PolicyContext {
+        PolicyContext {
+            workspace_root,
+            profile: PolicyProfile::DefaultRun,
+        }
+    }
 
-        let context = build_context(root.join("subdir").join(".."))
-            .expect("policy context should canonicalize startup cwd");
-
-        assert_eq!(
-            context.workspace_root,
-            root.canonicalize().expect("root should canonicalize")
-        );
-
-        fs::remove_dir_all(&root).expect("temp test directory cleanup should succeed");
+    fn inspection_context(workspace_root: PathBuf) -> PolicyContext {
+        PolicyContext {
+            workspace_root,
+            profile: PolicyProfile::OpenInspection,
+        }
     }
 
     fn request(cwd: PathBuf) -> ExecutionRequest {
@@ -105,15 +164,37 @@ mod tests {
         request
     }
 
+    fn request_with_args(cwd: PathBuf, command: Vec<&str>) -> ExecutionRequest {
+        let mut request = request(cwd);
+        request.command = command.into_iter().map(str::to_string).collect();
+        request
+    }
+
+    #[test]
+    fn build_context_canonicalizes_startup_cwd_once() {
+        let root = temp_dir("canonicalize");
+        let nested = root.join("subdir");
+        fs::create_dir_all(&nested).expect("temp test directory should be created");
+
+        let context = build_context(root.join("subdir").join(".."))
+            .expect("policy context should canonicalize startup cwd");
+
+        assert_eq!(
+            context.workspace_root,
+            root.canonicalize().expect("root should canonicalize")
+        );
+        assert_eq!(context.profile, PolicyProfile::DefaultRun);
+
+        fs::remove_dir_all(&root).expect("temp test directory cleanup should succeed");
+    }
+
     #[test]
     fn evaluate_allows_workspace_root_itself() {
         let workspace_root = std::env::current_dir()
             .expect("current directory should resolve")
             .canonicalize()
             .expect("current directory should canonicalize");
-        let context = PolicyContext {
-            workspace_root: workspace_root.clone(),
-        };
+        let context = context(workspace_root.clone());
 
         assert_eq!(
             evaluate(&request(workspace_root), &context),
@@ -126,9 +207,7 @@ mod tests {
         let root = temp_dir("descendant");
         let child = root.join("child");
         fs::create_dir_all(&child).expect("descendant directory should be created");
-        let context = PolicyContext {
-            workspace_root: root.canonicalize().expect("root should canonicalize"),
-        };
+        let context = context(root.canonicalize().expect("root should canonicalize"));
 
         assert_eq!(
             evaluate(
@@ -147,9 +226,7 @@ mod tests {
         let outside = temp_dir("outside");
         fs::create_dir_all(&root).expect("workspace root should be created");
         fs::create_dir_all(&outside).expect("outside directory should be created");
-        let context = PolicyContext {
-            workspace_root: root.canonicalize().expect("root should canonicalize"),
-        };
+        let context = context(root.canonicalize().expect("root should canonicalize"));
 
         assert_eq!(
             evaluate(
@@ -164,7 +241,7 @@ mod tests {
         );
 
         fs::remove_dir_all(&root).expect("temp test directory cleanup should succeed");
-        fs::remove_dir_all(&outside).expect("temp test directory cleanup should succeed");
+        fs::remove_dir_all(&outside).expect("outside directory cleanup should succeed");
     }
 
     #[test]
@@ -209,9 +286,7 @@ mod tests {
             .expect("current directory should resolve")
             .canonicalize()
             .expect("current directory should canonicalize");
-        let context = PolicyContext {
-            workspace_root: workspace_root.clone(),
-        };
+        let context = context(workspace_root.clone());
 
         for command_0 in ["rm", "sudo", "su", "shutdown", "reboot", "mkfs", "dd"] {
             assert_eq!(
@@ -233,9 +308,7 @@ mod tests {
             .expect("current directory should resolve")
             .canonicalize()
             .expect("current directory should canonicalize");
-        let context = PolicyContext {
-            workspace_root: workspace_root.clone(),
-        };
+        let context = context(workspace_root.clone());
 
         assert_eq!(
             evaluate(&request_with_command(workspace_root, "/bin/rm"), &context),
@@ -252,12 +325,116 @@ mod tests {
             .expect("current directory should resolve")
             .canonicalize()
             .expect("current directory should canonicalize");
-        let context = PolicyContext {
-            workspace_root: workspace_root.clone(),
-        };
+        let context = context(workspace_root.clone());
 
         assert_eq!(
             evaluate(&request_with_command(workspace_root, "rmdir"), &context),
+            PolicyDecision::Allow
+        );
+    }
+
+    #[test]
+    fn open_inspection_allows_documented_discovery_commands() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
+        let context = inspection_context(workspace_root.clone());
+
+        for command in [
+            vec!["ls", "src"],
+            vec!["find", "."],
+            vec!["fd", "policy"],
+            vec!["rg", "Phase 3B", "docs"],
+            vec!["grep", "Phase 3B", "docs/ROADMAP.md"],
+            vec!["cat", "README.md"],
+            vec!["head", "README.md"],
+            vec!["tail", "README.md"],
+            vec!["sed", "1,5p", "README.md"],
+        ] {
+            assert_eq!(
+                evaluate(
+                    &request_with_args(workspace_root.clone(), command),
+                    &context
+                ),
+                PolicyDecision::Allow
+            );
+        }
+    }
+
+    #[test]
+    fn open_inspection_denies_out_of_profile_commands_before_spawn() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
+        let context = inspection_context(workspace_root.clone());
+
+        for command_0 in ["cargo", "curl", "wget", "python", "sh"] {
+            assert_eq!(
+                evaluate(
+                    &request_with_command(workspace_root.clone(), command_0),
+                    &context
+                ),
+                PolicyDecision::Deny(DeniedExecution {
+                    code: "inspection_command_not_allowed".to_string(),
+                    message: "The request executable is outside the open inspection profile."
+                        .to_string(),
+                })
+            );
+        }
+    }
+
+    #[test]
+    fn open_inspection_keeps_existing_dangerous_executable_denials() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
+        let context = inspection_context(workspace_root.clone());
+
+        assert_eq!(
+            evaluate(&request_with_command(workspace_root, "rm"), &context),
+            PolicyDecision::Deny(DeniedExecution {
+                code: "denied_executable".to_string(),
+                message: "The request executable is denied by broker policy.".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn open_inspection_denies_obvious_out_of_workspace_path_args() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
+        let context = inspection_context(workspace_root.clone());
+
+        for command in [vec!["cat", "../outside"], vec!["cat", "/etc/passwd"]] {
+            assert_eq!(
+                evaluate(
+                    &request_with_args(workspace_root.clone(), command),
+                    &context
+                ),
+                PolicyDecision::Deny(DeniedExecution {
+                    code: "inspection_path_outside_workspace".to_string(),
+                    message: "The inspection request references a path outside the workspace root."
+                        .to_string(),
+                })
+            );
+        }
+    }
+
+    #[test]
+    fn open_inspection_does_not_change_default_run_policy() {
+        let workspace_root = std::env::current_dir()
+            .expect("current directory should resolve")
+            .canonicalize()
+            .expect("current directory should canonicalize");
+        let context = context(workspace_root.clone());
+
+        assert_eq!(
+            evaluate(&request_with_command(workspace_root, "cargo"), &context),
             PolicyDecision::Allow
         );
     }

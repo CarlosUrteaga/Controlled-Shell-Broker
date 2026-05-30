@@ -159,7 +159,8 @@ Phase 3A additionally plans:
 Phase 3B additionally plans:
 
 - a read-oriented inspection policy profile layered over broker execution;
-- inspection evidence for comparing repository exploration behavior.
+- inspection evidence for comparing repository exploration behavior;
+- denial of out-of-profile inspection commands and obvious out-of-workspace path arguments before subprocess spawn.
 
 ## Documentation Obligation
 

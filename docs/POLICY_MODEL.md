@@ -121,6 +121,18 @@ Basename matching is exact and applies to both bare names such as `rm` and path 
 
 These are admission rules, not runtime interpretation rules.
 
+## Phase 3B Inspection Profile
+
+Phase 3B adds an internal `OpenInspection` policy profile for read-oriented repository exploration while keeping ordinary `run` requests on the default policy profile.
+
+The inspection profile allows only the documented repository discovery executables: `ls`, `find`, `fd`, `rg`, `grep`, `cat`, `head`, `tail`, and `sed`.
+
+Out-of-profile executables are denied with `inspection_command_not_allowed`.
+
+Obvious out-of-workspace path arguments, including parent-directory components and absolute paths outside the workspace root, are denied with `inspection_path_outside_workspace`.
+
+The existing workspace-root and dangerous-executable denials still run before the inspection profile.
+
 ## Evidence Expectation
 
 A denied request must still produce one machine-readable evidence record.

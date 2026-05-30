@@ -209,6 +209,7 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     use super::*;
+    use crate::policy::PolicyProfile;
 
     static TEST_EVIDENCE_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -232,6 +233,7 @@ mod tests {
                 .expect("current directory should resolve")
                 .canonicalize()
                 .expect("current directory should canonicalize"),
+            profile: PolicyProfile::DefaultRun,
         }
     }
 
@@ -352,6 +354,7 @@ mod tests {
             .expect("current directory should canonicalize");
         let context = PolicyContext {
             workspace_root: workspace_root.clone(),
+            profile: PolicyProfile::DefaultRun,
         };
         let was_called = Rc::new(RefCell::new(false));
         let captured_root = Rc::new(RefCell::new(None::<PathBuf>));
@@ -463,6 +466,7 @@ mod tests {
             workspace_root: workspace_root
                 .canonicalize()
                 .expect("workspace root should canonicalize"),
+            profile: PolicyProfile::DefaultRun,
         };
 
         let output = execute_for_test(&request, &policy_context);
