@@ -61,6 +61,8 @@ pub struct ExecutionEvidence {
     pub error_code: Option<String>,
     pub policy_decision: String,
     pub policy_reason: Option<String>,
+    pub inspection_category: Option<String>,
+    pub inspection_arg_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -210,6 +212,10 @@ impl ExecutionEvidence {
             || "\"policy_reason\":null".to_string(),
             |value| format!("\"policy_reason\":{}", json_string(value)),
         );
+        let inspection_category = self.inspection_category.as_ref().map_or_else(
+            || "\"inspection_category\":null".to_string(),
+            |value| format!("\"inspection_category\":{}", json_string(value)),
+        );
 
         format!(
             concat!(
@@ -226,7 +232,9 @@ impl ExecutionEvidence {
                 "\"timestamp\":{},",
                 "{},",
                 "\"policy_decision\":{},",
-                "{}",
+                "{},",
+                "{},",
+                "\"inspection_arg_count\":{}",
                 "}}"
             ),
             json_string(&self.event_type),
@@ -241,7 +249,9 @@ impl ExecutionEvidence {
             json_string(&self.timestamp),
             error_code,
             json_string(&self.policy_decision),
-            policy_reason
+            policy_reason,
+            inspection_category,
+            self.inspection_arg_count
         )
     }
 }
@@ -510,6 +520,8 @@ mod tests {
             error_code: None,
             policy_decision: "allow".to_string(),
             policy_reason: None,
+            inspection_category: None,
+            inspection_arg_count: 2,
         };
 
         let json = evidence.to_json();
@@ -517,6 +529,8 @@ mod tests {
         assert!(json.contains("\"event_type\":\"execution.completed\""));
         assert!(json.contains("\"timestamp\":\"1716500000000\""));
         assert!(json.contains("\"policy_decision\":\"allow\""));
+        assert!(json.contains("\"inspection_category\":null"));
+        assert!(json.contains("\"inspection_arg_count\":2"));
         assert!(!json.contains("stdout"));
         assert!(!json.contains("stderr"));
     }
@@ -537,6 +551,8 @@ mod tests {
             error_code: Some("denied_executable".to_string()),
             policy_decision: "deny".to_string(),
             policy_reason: Some("denied_executable".to_string()),
+            inspection_category: None,
+            inspection_arg_count: 1,
         };
 
         let json = evidence.to_json();

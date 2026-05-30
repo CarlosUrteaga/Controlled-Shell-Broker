@@ -203,6 +203,21 @@ fn build_evidence(
         error_code: response.error.as_ref().map(|error| error.code.clone()),
         policy_decision: policy_audit.decision.clone(),
         policy_reason: policy_audit.reason.clone(),
+        inspection_category: inspection_category(&response.command).map(str::to_string),
+        inspection_arg_count: response.command.len(),
+    }
+}
+
+fn inspection_category(command: &[String]) -> Option<&'static str> {
+    let command_0 = command.first()?;
+    let basename = Path::new(command_0).file_name()?.to_str()?;
+
+    match basename {
+        "ls" => Some("list_paths"),
+        "find" | "fd" => Some("find_files"),
+        "rg" | "grep" => Some("search_text"),
+        "cat" | "head" | "tail" | "sed" => Some("read_file"),
+        _ => None,
     }
 }
 
@@ -321,6 +336,13 @@ mod tests {
         }
     }
 
+    fn response_with_command(command: Vec<String>) -> ExecutionResponse {
+        ExecutionResponse {
+            command,
+            ..response()
+        }
+    }
+
     fn temp_root(name: &str) -> PathBuf {
         std::env::temp_dir().join(format!(
             "llm-shell-evidence-{name}-{}-{}",
@@ -347,6 +369,8 @@ mod tests {
         assert!(contents.contains("\"request_id\":\"req-evidence-test\""));
         assert!(contents.contains("\"timestamp\":\""));
         assert!(contents.contains("\"policy_decision\":\"allow\""));
+        assert!(contents.contains("\"inspection_category\":null"));
+        assert!(contents.contains("\"inspection_arg_count\":2"));
         assert!(!contents.contains("stdout"));
         assert!(!contents.contains("stderr"));
 
@@ -374,6 +398,31 @@ mod tests {
         assert!(contents.contains("\"status\":\"denied\""));
         assert!(contents.contains("\"policy_decision\":\"deny\""));
         assert!(contents.contains("\"policy_reason\":\"denied_executable\""));
+        assert!(contents.contains("\"inspection_category\":null"));
+        assert!(contents.contains("\"inspection_arg_count\":3"));
+        assert!(!contents.contains("stdout"));
+        assert!(!contents.contains("stderr"));
+
+        fs::remove_file(&path).expect("evidence file cleanup should succeed");
+        fs::remove_dir_all(&temp_root).expect("evidence directory cleanup should succeed");
+    }
+
+    #[test]
+    fn persists_inspection_metrics_for_repository_search_command() {
+        let temp_root = temp_root("inspection");
+        let response = response_with_command(vec![
+            "rg".to_string(),
+            "Phase 3B".to_string(),
+            "docs".to_string(),
+        ]);
+        let timestamp = days_from_civil(2026, 5, 27) as u128 * MILLIS_PER_DAY;
+
+        let path = persist_in_root_at(&response, &PolicyAudit::allow(), &temp_root, timestamp, 30)
+            .expect("inspection evidence should persist");
+        let contents = fs::read_to_string(&path).expect("evidence file should be readable");
+
+        assert!(contents.contains("\"inspection_category\":\"search_text\""));
+        assert!(contents.contains("\"inspection_arg_count\":3"));
         assert!(!contents.contains("stdout"));
         assert!(!contents.contains("stderr"));
 
@@ -654,5 +703,34 @@ mod tests {
 
         fs::remove_dir_all(root.parent().expect("root should have parent"))
             .expect("test cleanup should succeed");
+    }
+
+    #[test]
+    fn classifies_inspection_discovery_commands() {
+        assert_eq!(
+            inspection_category(&["ls".to_string(), "src".to_string()]),
+            Some("list_paths")
+        );
+        assert_eq!(
+            inspection_category(&["/usr/bin/find".to_string(), ".".to_string()]),
+            Some("find_files")
+        );
+        assert_eq!(
+            inspection_category(&["rg".to_string(), "Phase 3B".to_string()]),
+            Some("search_text")
+        );
+        assert_eq!(
+            inspection_category(&["head".to_string(), "README.md".to_string()]),
+            Some("read_file")
+        );
+    }
+
+    #[test]
+    fn leaves_non_inspection_commands_uncategorized() {
+        assert_eq!(
+            inspection_category(&["cargo".to_string(), "test".to_string()]),
+            None
+        );
+        assert_eq!(inspection_category(&[]), None);
     }
 }

@@ -273,3 +273,13 @@ Phase 3B open inspection is a planned read-oriented policy profile layered over 
 - mutation, privilege escalation, network-oriented commands, shell-mediated escape hatches, and out-of-workspace access remain outside the inspection profile.
 - inspection metrics should be added to broker-owned evidence in a later implementation slice without persisting full stdout or stderr by default.
 - higher-level inspection primitives and command-semantic reinterpretation remain deferred until evidence from open inspection justifies them.
+
+### D-0036: Add Minimal Inspection Metrics To Evidence
+
+- Date: 2026-05-30
+- Status: Accepted
+Phase 3B PR 6 adds evidence-only inspection metrics without changing the caller-facing execution result.
+- evidence records include nullable `inspection_category` and numeric `inspection_arg_count`.
+- initial categories are limited to `list_paths`, `find_files`, `search_text`, and `read_file`.
+- non-inspection, denied, failed, timed-out, and execution-error events remain valid evidence records.
+- no stdout or stderr persistence, CLI flag, status vocabulary, or policy enforcement change is added in PR 6.
