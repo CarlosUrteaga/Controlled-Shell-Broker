@@ -262,3 +262,14 @@ Phase 3A PR 3 stores evidence under UTC date buckets and applies required cleanu
 - invalid retention configuration maps through the existing `evidence_write_failed` execution-error path instead of silently falling back.
 - cleanup deletes only valid expired date directories under the broker-owned evidence root, ignores non-date entries, and does not mutate target-workspace files.
 - no stdout or stderr persistence, CLI flags, result-schema changes, or new dependencies are added.
+
+### D-0035: Define Phase 3B Open Inspection As A Read-Oriented Broker Profile
+
+- Date: 2026-05-30
+- Status: Accepted
+Phase 3B open inspection is a planned read-oriented policy profile layered over existing broker execution, not a new execution engine or unrestricted shell mode.
+- the base `run` result contract, CLI flags, and status vocabulary remain unchanged in PR 5.
+- the initial inspection scope is repository discovery: listing paths, finding files, searching text, and bounded file reading inside the approved workspace root.
+- mutation, privilege escalation, network-oriented commands, shell-mediated escape hatches, and out-of-workspace access remain outside the inspection profile.
+- inspection metrics should be added to broker-owned evidence in a later implementation slice without persisting full stdout or stderr by default.
+- higher-level inspection primitives and command-semantic reinterpretation remain deferred until evidence from open inspection justifies them.

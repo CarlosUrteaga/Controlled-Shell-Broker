@@ -70,6 +70,8 @@ For the implemented version 1 policy phase, use [docs/V1_ACCEPTANCE.md](V1_ACCEP
 
 For implemented Phase 3A evidence behavior, use [docs/PHASE3_ACCEPTANCE.md](PHASE3_ACCEPTANCE.md) as the canonical manual smoke checklist covering durable storage, date-bucket layout, retention, and evidence failure behavior.
 
+For Phase 3B open inspection contract work, use manual design review against product, architecture, security, policy, and evidence docs until an implementation checklist exists.
+
 ## Task-Level Validation Contract
 
 Every future task must explicitly list:
@@ -87,6 +89,8 @@ If a task does not add or update automated tests, it must still provide:
 For docs-only Phase 3A contract tasks, the minimum manual validation is a source-of-truth consistency review across the listed docs, plus confirmation that no caller-visible schema or CLI behavior changed unintentionally.
 
 For Phase 3A acceptance checklist updates, also compare the checklist against [docs/CLI_CONTRACT.md](CLI_CONTRACT.md), [docs/REQUEST_RESPONSE_SCHEMA.md](REQUEST_RESPONSE_SCHEMA.md), and [docs/SECURITY_MODEL.md](SECURITY_MODEL.md).
+
+For Phase 3B docs-only contract tasks, confirm that ordinary `run` behavior remains unchanged, open inspection stays read-oriented and broker-governed, and higher-level inspection primitives remain deferred.
 
 ## Minimum Validation Expectations
 

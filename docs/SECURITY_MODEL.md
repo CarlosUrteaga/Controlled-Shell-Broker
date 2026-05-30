@@ -109,6 +109,16 @@ Phase 3A keeps that metadata-only boundary while changing the intended default s
 
 Phase 3A also bounds evidence lifecycle with a default 30-day UTC date-bucket retention window. The retention window may be configured through `LLM_SHELL_EVIDENCE_RETENTION_DAYS`, and cleanup must stay scoped to date-named directories under the broker-owned evidence root.
 
+## Phase 3B Open Inspection Assumptions
+
+Phase 3B plans a read-oriented inspection profile for repository exploration.
+
+The profile should allow bounded discovery commands such as listing paths, finding files, searching text, and reading files inside the approved workspace root. It should deny mutation, privilege escalation, network-oriented commands, shell-mediated escape hatches, and commands outside that root.
+
+Open inspection does not create a sandbox. Allowed inspection commands still run as the broker process user and may observe files readable by that user.
+
+Inspection evidence should record enough metadata to compare exploration behavior without persisting full stdout or stderr by default. Higher-level inspection primitives remain deferred until open inspection evidence shows that generic process-level inspection is insufficient.
+
 ## Human Approval Assumptions
 
 - Version 0 does not define a full human approval workflow.
@@ -145,6 +155,11 @@ Phase 3A additionally plans:
 - durable broker-owned evidence storage outside the target workspace;
 - bounded retention and cleanup for date-bucketed broker-owned evidence;
 - no stdout or stderr persistence by default despite the longer-lived storage target.
+
+Phase 3B additionally plans:
+
+- a read-oriented inspection policy profile layered over broker execution;
+- inspection evidence for comparing repository exploration behavior.
 
 ## Documentation Obligation
 

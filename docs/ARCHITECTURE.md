@@ -107,6 +107,10 @@ No downstream component should need raw CLI tokens after canonicalization.
 
 If an inspection layer is added later, it should consume canonical broker operations and evidence rather than invent a separate execution path.
 
+Phase 3B open inspection uses the existing adapter and broker pipeline. It keeps ordinary `run` requests stable while defining a future read-oriented policy profile for bounded listing, path search, text search, and file reading inside the workspace root.
+
+Inspection metrics belong in broker-owned evidence, not in the caller-facing result envelope, unless a later contract explicitly changes the schema.
+
 ## Source Of Truth Boundaries
 
 - Caller-facing CLI details: [docs/CLI_CONTRACT.md](CLI_CONTRACT.md)
@@ -152,6 +156,8 @@ Phase 3A keeps the same caller-visible execution contract and adds:
 - durable broker-owned evidence as the intended default storage direction;
 - bounded retention and cleanup as logging-layer responsibilities;
 - no stdout or stderr persistence despite the longer-lived evidence target.
+
+Phase 3B keeps the base `run` result contract stable and adds a planned read-oriented inspection policy profile plus evidence goals for measuring repository exploration behavior.
 
 This document defines structure and responsibility boundaries. Exact field names and status values belong in [docs/REQUEST_RESPONSE_SCHEMA.md](REQUEST_RESPONSE_SCHEMA.md).
 
