@@ -137,7 +137,9 @@ Rules:
   "exit_code": 0,
   "duration_ms": 1240,
   "timed_out": false,
-  "timestamp": "2026-05-23T00:00:00Z"
+  "timestamp": "2026-05-23T00:00:00Z",
+  "inspection_category": null,
+  "inspection_arg_count": 2
 }
 ```
 
@@ -150,6 +152,9 @@ Rules:
 - Evidence remains metadata-only by default: persisted events do not include stdout or stderr in Phase 3A.
 - Version 1 adds `execution.denied` for policy rejections before process spawn.
 - Version 1 adds `policy_decision` and `policy_reason` metadata for policy auditing.
+- Phase 3B adds `inspection_category` and `inspection_arg_count` evidence fields for measuring repository exploration behavior without changing the caller-facing result.
+- `inspection_category` is `null` for non-inspection commands. Initial non-null values are `list_paths`, `find_files`, `search_text`, and `read_file`.
+- `inspection_arg_count` records the command-vector length and does not persist command output.
 
 ## `DeniedExecutionEvent`
 
@@ -167,7 +172,9 @@ Rules:
   "timestamp": "2026-05-25T00:00:00Z",
   "error_code": "denied_executable",
   "policy_decision": "deny",
-  "policy_reason": "denied_executable"
+  "policy_reason": "denied_executable",
+  "inspection_category": null,
+  "inspection_arg_count": 3
 }
 ```
 
@@ -195,6 +202,8 @@ process_start_failed
 evidence_write_failed
 cwd_outside_workspace_root
 denied_executable
+inspection_command_not_allowed
+inspection_path_outside_workspace
 ```
 
 ## Status Vocabulary

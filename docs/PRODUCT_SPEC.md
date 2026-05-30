@@ -36,6 +36,20 @@ The Rust tool owns controlled command execution, process control, structured obs
 
 If repository-inspection workflows are added later, they remain broker-governed capabilities rather than autonomous agent logic.
 
+## Phase 3B Open Inspection Direction
+
+Phase 3B introduces a planned read-oriented inspection profile on top of the existing broker contract.
+
+The profile is intended to let an agent explore repository structure and text through bounded, auditable commands without changing the base `run` result contract.
+
+Initial inspection scope should focus on repository discovery commands such as file listing, path search, text search, and bounded file reading.
+
+Open inspection is not unrestricted shell access. It remains subject to workspace-root policy, timeout limits, denied executable rules, and durable metadata-only evidence.
+
+The first Phase 3B contract should gather evidence about inspection behavior before adding higher-level inspection primitives.
+
+Phase 3B does not make the Rust tool responsible for planning, interpreting findings, editing files, or deciding next actions.
+
 ## Problem Statement
 
 Coding agents need controlled terminal capabilities such as command execution, validation runs, process handling, and structured evidence. Unrestricted shell access is too risky and too hard to review.
