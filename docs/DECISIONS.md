@@ -294,3 +294,12 @@ Phase 3B PR 7 adds an internal `OpenInspection` policy profile while keeping ord
 - obvious out-of-workspace path arguments, including parent-directory components and absolute paths outside the workspace root, are denied with `inspection_path_outside_workspace`.
 - existing workspace-root and dangerous-executable denials still run before the inspection profile.
 - no new CLI flag, result envelope, status value, or stdout/stderr persistence change is added in PR 7.
+
+### D-0038: Close Phase 3B By Re-Deferring Derived Inspection Primitives
+
+- Date: 2026-06-08
+- Status: Accepted
+Phase 3B closeout reviews the implemented open inspection profile and current evidence model, then keeps higher-level inspection primitives and command-semantic reinterpretation deferred.
+- the current evidence boundary is intentionally narrow: broker-owned evidence records inspection category and command-vector size, but it does not yet document repeated insufficiency in the allowed repository-discovery command set.
+- ordinary `run` behavior and the current `OpenInspection` profile remain the default repository-exploration path until a later phase presents stronger empirical justification for a higher-level primitive layer.
+- the next major implementation phase remains sessions and process handles rather than silently expanding inspection scope.

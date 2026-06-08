@@ -48,6 +48,8 @@ Open inspection is not unrestricted shell access. It remains subject to workspac
 
 The first Phase 3B contract should gather evidence about inspection behavior before adding higher-level inspection primitives.
 
+The current Phase 3B outcome is to keep higher-level inspection primitives deferred. The implemented inspection evidence is still limited to lightweight command-category and argument-count style metrics, and no repeated insufficiency has been documented that would justify adding a new primitive layer yet.
+
 Phase 3B does not make the Rust tool responsible for planning, interpreting findings, editing files, or deciding next actions.
 
 ## Problem Statement
