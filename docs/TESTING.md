@@ -92,6 +92,8 @@ For Phase 3A acceptance checklist updates, also compare the checklist against [d
 
 For Phase 3B docs-only contract tasks, confirm that ordinary `run` behavior remains unchanged, open inspection stays read-oriented and broker-governed, and higher-level inspection primitives remain deferred.
 
+For the Phase 3B closeout review, also confirm that the docs cite the current evidence boundary accurately: inspection evidence is limited to lightweight inspection-category and argument-count style metadata, and no caller-visible contract change is introduced while derived primitives remain deferred.
+
 ## Minimum Validation Expectations
 
 For future Rust implementation tasks, the default expectation is:

@@ -47,7 +47,8 @@ Near-term follow-up:
 - start with repository discovery commands such as listing paths, finding files, searching text, and bounded file reading;
 - enforce denial of mutation, privilege escalation, network-oriented commands, shell escape hatches, and obvious out-of-workspace path arguments in the inspection profile;
 - use inspection-oriented evidence metrics without redefining the core execution result shape;
-- use observed command usage to decide whether higher-level inspection primitives are justified later.
+- use observed command usage to decide whether higher-level inspection primitives are justified later;
+- keep higher-level inspection primitives deferred until a later review documents a concrete repeated insufficiency in the current inspection profile.
 
 ### Command Semantics Decision
 
@@ -56,6 +57,7 @@ Near-term follow-up:
 
 ### Process Lifecycle
 
+- the next major implementation phase after the current Phase 3B closeout is sessions and process handles;
 - add explicit process-group handling if descendant cleanup becomes required;
 - design long-lived sessions and stop or kill semantics only after the foreground path stays stable.
 

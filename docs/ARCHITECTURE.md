@@ -111,6 +111,8 @@ Phase 3B open inspection uses the existing adapter and broker pipeline. It keeps
 
 Inspection metrics belong in broker-owned evidence, not in the caller-facing result envelope, unless a later contract explicitly changes the schema.
 
+Phase 3B does not introduce a separate derived-inspection abstraction above those brokered commands. Until the evidence shows a repeated insufficiency in the current open inspection profile, higher-level inspection primitives remain deferred.
+
 ## Source Of Truth Boundaries
 
 - Caller-facing CLI details: [docs/CLI_CONTRACT.md](CLI_CONTRACT.md)
@@ -158,6 +160,8 @@ Phase 3A keeps the same caller-visible execution contract and adds:
 - no stdout or stderr persistence despite the longer-lived evidence target.
 
 Phase 3B keeps the base `run` result contract stable and adds a planned read-oriented inspection policy profile plus evidence goals for measuring repository exploration behavior.
+
+Phase 3B closeout keeps that inspection profile as the default repository-exploration path and defers any higher-level inspection primitive layer until a later documented phase presents stronger empirical justification.
 
 This document defines structure and responsibility boundaries. Exact field names and status values belong in [docs/REQUEST_RESPONSE_SCHEMA.md](REQUEST_RESPONSE_SCHEMA.md).
 
